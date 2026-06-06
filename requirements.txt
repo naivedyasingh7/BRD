@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+langgraph
+langchain-core
+google-genai
+streamlit
+python-dotenv
+requests
+pydantic
+httpx
+python-multipart
