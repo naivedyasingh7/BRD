@@ -1,11 +1,8 @@
 import streamlit as st
-import requests
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Configuration
+# TODO: Connect this to the actual backend API URL
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 # Page configuration
@@ -16,7 +13,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling Injection
+# Custom Styling Injection (Premium Dark/Neon Glassmorphism Theme)
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
@@ -88,7 +85,7 @@ div.stButton > button.secondary-btn {
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize Session States
+# Initialize Session States for Page Routing and Flow
 if "step" not in st.session_state:
     st.session_state.step = "input"
 if "graph_state" not in st.session_state:
@@ -104,37 +101,47 @@ if "localized_brd" not in st.session_state:
 if "language" not in st.session_state:
     st.session_state.language = "Hindi"
 
-# Sidebar History list
+# ==========================================
+# SIDEBAR - HISTORY & CONTROLS
+# ==========================================
 st.sidebar.markdown('<div class="sidebar-title">📜 BRD Generation History</div>', unsafe_allow_html=True)
 
-# Retrieve history from backend
-try:
-    history_res = requests.get(f"{BACKEND_URL}/api/history")
-    if history_res.status_code == 200:
-        history_list = history_res.json()
-        if not history_list:
-            st.sidebar.info("No past documents found.")
-        for item in history_list:
-            btn_label = f"📁 {item['project_name'][:25]} ({item['language']})"
-            if st.sidebar.button(btn_label, key=f"hist_{item['id']}", use_container_width=True):
-                # Fetch detailed history
-                detail_res = requests.get(f"{BACKEND_URL}/api/history/{item['id']}")
-                if detail_res.status_code == 200:
-                    detail = detail_res.json()
-                    st.session_state.english_brd = detail["english_brd"]
-                    st.session_state.localized_brd = detail["localized_brd"]
-                    st.session_state.language = detail["language"]
-                    st.session_state.step = "completed"
-                    st.rerun()
-except Exception as e:
-    st.sidebar.error("Could not connect to history service.")
+# TODO: Frontend Developer - Connect this to retrieve past BRDs from database via `/api/history`
+# Example API Fetch Structure:
+# try:
+#     res = requests.get(f"{BACKEND_URL}/api/history")
+#     history_list = res.json()
+# except Exception as e:
+#     st.sidebar.error("Error connecting to backend database API")
 
-# Main app title
+# Mock History items for UI presentation
+mock_history = [
+    {"id": 1, "project_name": "Retail Billing System", "language": "Hindi"},
+    {"id": 2, "project_name": "E-Commerce App", "language": "Tamil"},
+]
+
+for item in mock_history:
+    btn_label = f"📁 {item['project_name']} ({item['language']})"
+    if st.sidebar.button(btn_label, key=f"hist_{item['id']}", use_container_width=True):
+        # TODO: Implement database detail fetch when clicking history items
+        # Example: detail = requests.get(f"{BACKEND_URL}/api/history/{item['id']}").json()
+        st.session_state.english_brd = f"# Mock BRD for {item['project_name']}\nDetails retrieved from history."
+        st.session_state.localized_brd = f"# Localized Mock BRD for {item['project_name']}\nDetails translated."
+        st.session_state.language = item['language']
+        st.session_state.step = "completed"
+        st.rerun()
+
+st.sidebar.info("💡 Note: The history list above is currently mocked. Integrate the REST API to load database logs.")
+
+# ==========================================
+# MAIN PAGE LAYOUT
+# ==========================================
 st.markdown('<div class="main-header">BRD Genie 🧞‍♂️</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Multi-Agent AI PM: Turning Messy Voice & Text Notes into Professional BRDs</div>', unsafe_allow_html=True)
 
-# Layout container
-# Step 1: Input Requirements
+# ------------------------------------------
+# STEP 1: INPUT REQUIREMENTS
+# ------------------------------------------
 if st.session_state.step == "input":
     st.markdown('<div class="glass-card"><h3>📥 Step 1: Tell Genie about your Project</h3></div>', unsafe_allow_html=True)
     
@@ -155,8 +162,8 @@ if st.session_state.step == "input":
         
         if input_type == "✍️ Paste Text Notes":
             raw_text_input = st.text_area(
-                "Write or paste your messy notes here (any language - e.g. Hindi, Tamil, English):",
-                placeholder="Example: Mujhe ek app chahiye jo dukaan ka hisaab rakhe. Dukandaar saara samaan enter kar sake, billing kar sake. Offline bhi chalna chahiye internet low hota hai.",
+                "Write or paste your messy notes here (any language - e.g., Hindi, Tamil, English):",
+                placeholder="Example: Mujhe ek app chahiye jo dukaan ka hisaab rakhe. Dukandaar saara samaan enter kar sake, billing kar sake. Offline bhi chalna chahiye.",
                 height=200
             )
         else:
@@ -172,62 +179,52 @@ if st.session_state.step == "input":
             elif input_type == "🎙️ Audio File Upload" and not uploaded_file:
                 st.error("Please upload an audio file.")
             else:
-                with st.spinner("Genie agents are translating, cleaning, and analyzing your inputs..."):
-                    try:
-                        # Prepare API payload
-                        files = None
-                        data = {"language": lang_option}
-                        
-                        if uploaded_file:
-                            files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                        else:
-                            data["raw_text"] = raw_text_input
-                            
-                        response = requests.post(f"{BACKEND_URL}/api/start", data=data, files=files)
-                        
-                        if response.status_code == 200:
-                            result = response.json()
-                            st.session_state.graph_state = result
-                            
-                            # If questions are generated, move to clarification step
-                            if result.get("questions"):
-                                st.session_state.questions = result["questions"]
-                                st.session_state.step = "clarification"
-                            else:
-                                # Skip clarification if no questions asked
-                                st.session_state.english_brd = result.get("final_brd", "")
-                                st.session_state.localized_brd = result.get("localized_brd", "")
-                                st.session_state.step = "completed"
-                            st.rerun()
-                        else:
-                            st.error(f"Backend API Error: {response.text}")
-                    except Exception as err:
-                        st.error(f"Connection failed: {err}")
+                with st.spinner("Processing..."):
+                    # TODO: Frontend Developer - Connect to backend endpoint `/api/start`
+                    # Example payload construction:
+                    # files = {"file": uploaded_file} if uploaded_file else None
+                    # data = {"raw_text": raw_text_input, "language": lang_option}
+                    # response = requests.post(f"{BACKEND_URL}/api/start", data=data, files=files).json()
+                    
+                    # Mock state transition
+                    st.session_state.graph_state = {
+                        "raw_input": raw_text_input if raw_text_input else "Uploaded Audio Path Mock",
+                        "language": lang_option,
+                        "cleaned_input": "Mock Cleaned Input"
+                    }
+                    st.session_state.questions = [
+                        "Should this app run as a Mobile App, a Web App, or both?",
+                        "Do you need automated inventory deduction when billing occurs?"
+                    ]
+                    st.session_state.step = "clarification"
+                    st.rerun()
                         
     with col2:
         st.markdown("""
         <div class="glass-card" style="height: 100%;">
             <h4>🧠 Meet the Genie Multi-Agent Squad:</h4>
             <ul>
-                <li><strong>🗣️ Input Processor (Sarvam)</strong>: Transcribes your voice and cleans up slang/noise into English.</li>
-                <li><strong>🧠 Requirements Extractor</strong>: Sorts your notes into problem, actors, features, and constraints.</li>
+                <li><strong>🗣️ Input Processor</strong>: Transcribes voice and cleans up slang/noise into English.</li>
+                <li><strong>🧠 Requirements Extractor</strong>: Sorts notes into problems, actors, features, and constraints.</li>
                 <li><strong>❓ Clarification Agent</strong>: Identifies gaps and asks you smart follow-up questions.</li>
                 <li><strong>🏗️ BRD Structuring Agent</strong>: Translates requirements into an official PM-ready draft.</li>
-                <li><strong>✅ Quality Auditor</strong>: Checks the draft for discrepancies, missing features, and details.</li>
+                <li><strong>✅ Quality Auditor</strong>: Checks the draft for consistency, omissions, and details.</li>
                 <li><strong>🌍 Localization Agent</strong>: Translates the verified BRD back into your selected language!</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
 
-# Step 2: Clarification Chat
+# ------------------------------------------
+# STEP 2: CLARIFICATION CHAT
+# ------------------------------------------
 elif st.session_state.step == "clarification":
     st.markdown('<div class="glass-card"><h3>❓ Step 2: Clarifying Your Requirements</h3></div>', unsafe_allow_html=True)
-    st.write("The Clarification Agent detected some ambiguities in your description. Please provide quick answers so we can draft a highly accurate document.")
+    st.write("The Clarification Agent detected some ambiguities in your description. Please provide answers to continue.")
 
     questions = st.session_state.questions
     answers = []
 
-    # Display question form
+    # Display question forms dynamically
     for idx, question in enumerate(questions):
         st.markdown(f"**Question {idx + 1}:** {question}")
         ans = st.text_input(f"Your answer to Question {idx + 1}:", key=f"q_{idx}")
@@ -236,34 +233,44 @@ elif st.session_state.step == "clarification":
     col1, col2 = st.columns([1, 5])
     with col1:
         if st.button("🏗️ Generate BRD"):
-            # Ensure all questions have at least some answers (default placeholder if empty)
+            # Ensure all questions have at least some answers
             processed_answers = [a if a.strip() else "Not specified" for a in answers]
             
-            with st.spinner("Genie PMs are writing your detailed Business Requirements Document..."):
-                try:
-                    payload = {
-                        "state": st.session_state.graph_state,
-                        "answers": processed_answers
-                    }
-                    response = requests.post(f"{BACKEND_URL}/api/clarify", json=payload)
-                    if response.status_code == 200:
-                        result = response.json()
-                        st.session_state.english_brd = result.get("final_brd", "")
-                        st.session_state.localized_brd = result.get("localized_brd", "")
-                        st.session_state.step = "completed"
-                        st.rerun()
-                    else:
-                        st.error(f"Backend API Error: {response.text}")
-                except Exception as err:
-                    st.error(f"Connection failed: {err}")
+            with st.spinner("Generating document..."):
+                # TODO: Frontend Developer - Connect to backend `/api/clarify`
+                # Example API request:
+                # payload = {"state": st.session_state.graph_state, "answers": processed_answers}
+                # response = requests.post(f"{BACKEND_URL}/api/clarify", json=payload).json()
+                
+                # Mock state transition
+                st.session_state.english_brd = f"""# Business Requirements Document - Retail Billing App (Mock)
+                
+## 1. Executive Summary
+Mock generated business requirement document.
+                
+## 2. Scope of Work
+- **In Scope**: Billing client, offline synchronization.
+- **Out of Scope**: Online credit card payment.
+
+## 3. Mock Answers Log
+- Q1 Answer: {processed_answers[0] if len(processed_answers) > 0 else 'N/A'}
+- Q2 Answer: {processed_answers[1] if len(processed_answers) > 1 else 'N/A'}
+"""
+                st.session_state.localized_brd = f"""# [MOCK TRANSLATION TO {st.session_state.language.upper()}]
+Business Requirements Document - Retail Billing App (Mock)
+"""
+                st.session_state.step = "completed"
+                st.rerun()
     with col2:
-        if st.button("⬅️ Start Over", type="secondary"):
+        if st.button("⬅️ Start Over"):
             st.session_state.step = "input"
             st.session_state.questions = []
             st.session_state.answers = []
             st.rerun()
 
-# Step 3: BRD Output
+# ------------------------------------------
+# STEP 3: BRD OUTPUT & REGENERATION
+# ------------------------------------------
 elif st.session_state.step == "completed":
     st.markdown('<div class="glass-card"><h3>📄 Step 3: Your Generated BRD is Ready!</h3></div>', unsafe_allow_html=True)
     
@@ -298,28 +305,12 @@ elif st.session_state.step == "completed":
     with edit_col1:
         edit_notes = st.text_area("Need changes? Add feedback/revision requests here:", placeholder="Example: Add a feature for exporting sales reports to PDF.")
         if st.button("🔄 Regenerate BRD"):
-            # To regenerate, we can resume from input but with the new feedback appended to cleaned_input
-            updated_input = st.session_state.graph_state.get("cleaned_input", "") + f"\n\nRevision request: {edit_notes}"
-            st.session_state.graph_state["cleaned_input"] = updated_input
-            st.session_state.graph_state["answers"] = [] # Reset answers so it re-asks if clarification is triggered, or we can force skip to generate
-            
             with st.spinner("Regenerating requirements document..."):
-                try:
-                    payload = {
-                        "state": st.session_state.graph_state,
-                        "answers": ["Proceed with the revision request."] # dummy answer to skip clarification interruption
-                    }
-                    response = requests.post(f"{BACKEND_URL}/api/clarify", json=payload)
-                    if response.status_code == 200:
-                        result = response.json()
-                        st.session_state.english_brd = result.get("final_brd", "")
-                        st.session_state.localized_brd = result.get("localized_brd", "")
-                        st.session_state.graph_state = result
-                        st.rerun()
-                    else:
-                        st.error(f"Backend API Error: {response.text}")
-                except Exception as err:
-                    st.error(f"Connection failed: {err}")
+                # TODO: Frontend Developer - Connect to backend regeneration API path
+                # Append feedback to input and trigger regenerate `/api/clarify` (or a direct edit API)
+                st.session_state.english_brd += f"\n\n## Update (Revision Request)\n{edit_notes}"
+                st.session_state.localized_brd += f"\n\n[MOCK TRANSLATION OF REVISION]\n{edit_notes}"
+                st.rerun()
                     
     with edit_col2:
         st.markdown("<br><br>", unsafe_allow_html=True)

@@ -1,36 +1,7 @@
-You are a Principal Technical Product Manager. Your task is to write a highly detailed, professional, and clear Business Requirements Document (BRD) using the extracted requirements and the user's answers to clarifying questions.
-
-Input Structured Data:
-{structured_data}
-
-Clarification Answers:
-{clarification_qa}
-
-Generate a comprehensive BRD in Markdown format. The document MUST follow this structure:
-
-# Business Requirements Document (BRD) - {project_name}
-
-## 1. Executive Summary
-Provide a high-level summary of the project, its purpose, and the overall value proposition.
-
-## 2. Problem Statement & Objectives
-Detail the core problem being solved and the specific business objectives this solution aims to achieve.
-
-## 3. Scope of Work
-- **In Scope**: What features and capabilities are included in this release.
-- **Out of Scope**: What features are explicitly excluded.
-
-## 4. User Personas / Actors
-Describe the key users (roles) who will interact with the system and their primary goals.
-
-## 5. Functional Requirements
-Group the requirements by feature area. For each feature, provide a description and acceptance criteria.
-Format as a detailed list or table.
-
-## 6. Non-Functional Requirements
-Include performance, security, scalability, localization (e.g., multilingual support), and constraints (like offline mode or low bandwidth).
-
-## 7. User Stories & Use Cases
-Write 3-5 primary user stories in the format: "As a [user], I want to [action] so that [benefit]." Include brief acceptance criteria for each.
-
-Maintain a professional, formal, and authoritative tone. Do not include placeholder text or notes; generate realistic details if needed.
+# TODO: Prompt engineer to implement the Business Requirements Document (BRD) prompt template.
+# Variables that will be passed:
+# - {project_name}
+# - {structured_data}
+# - {clarification_qa}
+#
+# Define the format, sections, and tone rules for the LLM to generate the BRD draft.

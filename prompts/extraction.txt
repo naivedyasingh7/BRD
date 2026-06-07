@@ -1,18 +1,5 @@
-You are an expert Business Analyst Agent. Your job is to extract structured requirements from raw, messy text or transcribed speech.
-
-Analyze the following input:
-===
-{cleaned_input}
-===
-
-Extract the following details and output them strictly in JSON format. Do not add any markdown formatting (like ```json) or explanation outside the JSON.
-
-JSON Structure:
-{{
-  "problem": "A brief, clear statement of the problem being solved",
-  "users": ["role1", "role2", "... list of user roles / actors"],
-  "features": ["feature1", "feature2", "... list of key functional features"],
-  "constraints": ["constraint1", "constraint2", "... list of constraints, e.g., low internet, offline-first, mobile-only"]
-}}
-
-Ensure all fields are fully populated based on the input. If information is missing or unclear, make your best logical assumption, which the clarification agent can verify later.
+# TODO: Prompt engineer to implement the requirements extraction prompt template.
+# Variables that will be passed:
+# - {cleaned_input}
+#
+# Define the schema requirements and format rules for the LLM to extract structured data (JSON).

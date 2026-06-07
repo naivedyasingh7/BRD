@@ -1,43 +1,27 @@
 import os
-from google import genai
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
-# Set default model
+# Set default model placeholder
 MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 class LLMService:
+    """
+    LLMService skeleton for other developers to integrate the real AI LLM calls.
+    Currently returns mock data.
+    """
     def __init__(self):
-        # The Client will automatically look for GEMINI_API_KEY in environment
-        self.api_key = os.getenv("GEMINI_API_KEY")
-        if not self.api_key:
-            print("WARNING: GEMINI_API_KEY not found in environment. Please set it in your .env file.")
-        self.client = genai.Client(api_key=self.api_key) if self.api_key else None
+        # TODO: Initialize Gemini or other LLM Client here
+        # Example: self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        pass
 
     def generate(self, prompt: str, system_instruction: str = None) -> str:
         """
-        Generate content using the Gemini model.
+        Generate content using the LLM model.
+        TODO: Implement real LLM API call.
         """
-        if not self.client:
-            # Simple mock response if API key is missing
-            return f"[MOCK GENERATION] (Set GEMINI_API_KEY to see actual output)\nPrompt: {prompt[:100]}..."
-
-        try:
-            config = {}
-            if system_instruction:
-                config["system_instruction"] = system_instruction
-            
-            response = self.client.models.generate_content(
-                model=MODEL_NAME,
-                contents=prompt,
-                config=config
-            )
-            return response.text
-        except Exception as e:
-            print(f"Error calling Gemini API: {e}")
-            return f"Error: Failed to generate content due to API error: {str(e)}"
+        print(f"[LLMService] Mocking generation for prompt. System instruction: {system_instruction}")
+        
+        # Simple mock response returned for testing flow
+        return f"[MOCK GENERATED BRD CONTENT]\nPrompt snippet: {prompt[:100]}..."
 
 # Singleton instance
 llm_service = LLMService()
