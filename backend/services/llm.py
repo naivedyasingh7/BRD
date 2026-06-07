@@ -27,6 +27,10 @@ class LLMService:
             logger.error(f"Failed to initialize ChatGroq: {e}")
             raise RuntimeError(f"Could not initialize the Groq reasoning engine: {str(e)}")
 
-# Singleton instance exposing the shared LLM
-llm_service = LLMService()
-shared_groq_llm = llm_service.llm
+# Singleton — lazy: only raises at call time if key is missing
+try:
+    llm_service = LLMService()
+    shared_groq_llm = llm_service.llm
+except ValueError:
+    llm_service = None
+    shared_groq_llm = None

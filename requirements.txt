@@ -6,7 +6,6 @@ crewai
 crewai-tools
 langchain-groq
 groq
-streamlit
 python-dotenv
 requests
 pydantic

@@ -1,0 +1,59 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Base ─────────────────────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Design Tokens ────────────────────────────────────── */
+@theme {
+  --font-sans:      "Jost", "Inter", system-ui, -apple-system, sans-serif;
+  --font-display:   "Jost", "Clash Grotesk", "Satoshi", sans-serif;
+  --font-serif:     "Playfair Display", "Lora", serif;
+  --font-editorial: "Playfair Display", "Lora", serif;
+  --font-mono:      "JetBrains Mono", "Fira Code", monospace;
+
+  --color-primary:             #0D2137;
+  --color-accent-gold:         #1A78C2;
+  --color-accent-gold-light:   #2E90D8;
+  --color-accent-gold-dark:    #0E5FA0;
+  --color-accent-blue:         #1A78C2;
+  --color-accent-blue-light:   #2E90D8;
+  --color-accent-blue-dark:    #0E5FA0;
+  --color-accent-purple:       #8B5CF6;
+  --color-accent-purple-light: #A855F7;
+  --color-bg-cream:            #D6EAF8;
+  --color-bg-card:             #C5DDEF;
+  --color-surface:             #FFFFFF;
+
+  --color-slate-350: #5B8CB8;
+  --color-slate-450: #3B6B9A;
+  --color-slate-655: #1E4D78;
+}
+
+/* ── Dark mode overrides ──────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+  --color-primary:       #F0F0F0;
+  --color-accent-gold:   #60B8F0;
+  --color-bg-cream:      #000000;
+  --color-bg-card:       #0A0A0A;
+  --color-surface:       #111111;
+}
+
+html.dark body { background-color: #000000; color: #F0F0F0; }
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(26,120,194,0.3); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(26,120,194,0.6); }
+
+/* ── Selection ────────────────────────────────────────── */
+::selection { background: rgba(26,120,194,0.15); color: #0D2137; }
+

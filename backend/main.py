@@ -6,13 +6,20 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.graph.workflow import graph
-from backend.graph.state import BRDState
-from backend.database import save_brd, get_all_brds, get_brd_by_id
-
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("FastAPI")
+
+try:
+    from backend.graph.workflow import graph
+    from backend.graph.state import BRDState
+    AGENTS_READY = True
+    logger.info("AI agents loaded successfully.")
+except (ImportError, Exception) as e:
+    AGENTS_READY = False
+    logger.warning(f"AI agents not available: {e}")
+
+from backend.database import save_brd, get_all_brds, get_brd_by_id
 
 app = FastAPI(title="BRD Genie Backend API")
 
@@ -24,6 +31,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "agents_ready": AGENTS_READY}
 
 TEMP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "temp_audio")
 os.makedirs(TEMP_DIR, exist_ok=True)
@@ -38,9 +49,8 @@ async def start_session(
     raw_text: Optional[str] = Form(None),
     language: str = Form("English")
 ):
-    """
-    Start a BRD generation session using either audio input or raw text input.
-    """
+    if not AGENTS_READY:
+        raise HTTPException(status_code=503, detail="AI agents not available. Please set GROQ_API_KEY in your .env file and restart the server.")
     if not file and not raw_text:
         logger.warning("Session started without file or raw_text")
         raise HTTPException(status_code=400, detail="Either file or raw_text must be provided.")
@@ -90,6 +100,8 @@ async def clarify_session(request: ClarifyRequest):
     """
     Submit answers to the generated questions and resume the LangGraph flow.
     """
+    if not AGENTS_READY:
+        raise HTTPException(status_code=503, detail="AI agents not available. Please set GROQ_API_KEY in your .env file and restart the server.")
     state_input = request.state
     state_input["answers"] = request.answers
 

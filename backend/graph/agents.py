@@ -8,6 +8,9 @@ from backend.graph.state import BRDState
 from backend.services.sarvam import sarvam_service
 from backend.services.llm import shared_groq_llm
 
+if shared_groq_llm is None:
+    raise ImportError("GROQ_API_KEY is not configured. Set it in your .env file to use the AI agents.")
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------
@@ -98,11 +101,17 @@ def input_agent(state: BRDState) -> dict:
 
     if raw_input.lower().endswith((".wav", ".mp3", ".m4a", ".ogg", ".webm")):
         logger.info(f"Processing audio input: {raw_input}")
+        if sarvam_service is None:
+            raise RuntimeError("SARVAM_API_KEY is not configured. Cannot process audio files.")
         cleaned_input = sarvam_service.speech_to_text_translate(raw_input)
     else:
         logger.info(f"Processing text input. Language: {language}")
         if language != "English" and raw_input:
-            cleaned_input = sarvam_service.translate(raw_input, source_lang=language, target_lang="English")
+            if sarvam_service is not None:
+                cleaned_input = sarvam_service.translate(raw_input, source_lang=language, target_lang="English")
+            else:
+                logger.warning("SARVAM_API_KEY not set — skipping translation, using raw input as-is.")
+                cleaned_input = raw_input
         else:
             cleaned_input = raw_input
 
@@ -306,6 +315,9 @@ def localize_agent(state: BRDState) -> dict:
         
     logger.info(f"Translating final BRD to {language} via Sarvam AI...")
     try:
+        if sarvam_service is None:
+            logger.warning("SARVAM_API_KEY not set — returning English BRD as localized output.")
+            return {"localized_brd": final_brd}
         localized_brd = sarvam_service.translate(
             text=final_brd, 
             source_lang="English", 

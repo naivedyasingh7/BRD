@@ -1,5 +1,0 @@
-# TODO: Prompt engineer to implement the Quality Assurance / Auditor prompt template.
-# Variables that will be passed:
-# - {draft_brd}
-#
-# Define instructions for the LLM to inspect, clean, and verify consistency of the draft BRD.

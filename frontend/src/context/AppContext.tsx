@@ -1,0 +1,312 @@
+import React, { createContext, useContext, useState, useCallback } from 'react';
+import { ViewType, Project, BrdDocument, ToastData } from '../types';
+
+// ─── Seed Data ────────────────────────────────────────────────────────────────
+
+const SEED_DOCUMENTS: Record<string, BrdDocument> = {
+  proj1: {
+    projectName: 'CRM Integration Framework',
+    executiveSummary:
+      'This document defines the requirements for integrating our main CRM platform with the SAP ERP sync engine to automate lead and contact updates in real-time.',
+    objectives: [
+      'Automate batch data synchronization every 24 hours.',
+      'Implement automatic retry mechanism (up to 3 times) for network failures.',
+      'Ensure secure OAuth2 authentication flow for all API connections.',
+    ],
+    functionalRequirements: [
+      {
+        id: 'REQ-CRM-1.1',
+        title: 'Batch ERP Sync Engine',
+        description:
+          'Synchronize CRM contacts with SAP daily. The sync should use incremental logs to optimize payload sizes.',
+        status: 'Validated',
+      },
+    ],
+    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
+      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">CRM Sync</text>
+      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">SAP Gateway</text>
+      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
+      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Success Log</text>
+    </svg>`,
+    userStories: [
+      {
+        actor: 'Sales Rep',
+        goal: 'Have updated CRM details synced immediately to SAP',
+        outcome: 'I can view customer transactions in real-time.',
+      },
+    ],
+    suggestedImprovements: [
+      { id: 'imp1', text: 'Specify encryption standard for SAP synchronization logs', applied: false },
+      { id: 'imp2', text: 'Implement fallback email alerts for synchronization errors', applied: false },
+    ],
+  },
+  proj2: {
+    projectName: 'Mobile App Onboarding Flow',
+    executiveSummary:
+      'This BRD outlines functional guidelines for implementing dual-channel MFA within our high-density consumer lending interface, enforcing mandatory identity lockouts and strict audit logs adhering to GDPR and fintech compliance policies.',
+    objectives: [
+      'Deploy automated dual-channel OTP delivery (SMS primary + WhatsApp API failover) with zero credential lockouts.',
+      'Implement robust rate limiting: max 3 failed OTPs results in a strict 5-minute lockout.',
+      'Introduce full relational audit logging detailing timestamp, regional scope, and device signatures.',
+    ],
+    functionalRequirements: [
+      {
+        id: 'REQ-MFA-3.1',
+        title: 'Dual-Channel Gateway Redundancy',
+        description:
+          'The identity engine MUST attempt WhatsApp delivery if standard SMS exceeds 4500ms transmission delay. Fallback latency checkers run asynchronously in the background.',
+        status: 'Validated',
+      },
+    ],
+    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
+      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">SMS Req</text>
+      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Gateway Check</text>
+      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
+      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">WA Failover</text>
+    </svg>`,
+    userStories: [
+      {
+        actor: 'Retail Borrower',
+        goal: 'Receive secondary OTP tokens securely on WhatsApp',
+        outcome: 'Can authorize loan applications even in remote regions with cellular lag.',
+      },
+      {
+        actor: 'Compliance Lead',
+        goal: 'Mandate PostgreSQL audit trail for failing logs',
+        outcome: 'Ensure full regional GDPR regulatory coverage during peak traffic.',
+      },
+      {
+        actor: 'Fintech Operator',
+        goal: 'Trigger 300-second lockout after 3 invalid OTP loops',
+        outcome: 'Prevent high-volume automated brute-force credential stuffing.',
+      },
+    ],
+    suggestedImprovements: [
+      { id: 'imp1', text: 'Add rate-limit policy rule to OTP deliveries', applied: false },
+      { id: 'imp2', text: 'Specify audit logging parameters for compliance', applied: false },
+      { id: 'imp3', text: 'Formulate GDPR residency criteria for phone lists', applied: false },
+    ],
+  },
+  proj3: {
+    projectName: 'Subscription Billing Logic',
+    executiveSummary:
+      'This document details subscription billing tier logic, handling upgrade and downgrade events, pricing parameters, and automatic payment retry rules for a SaaS platform.',
+    objectives: [
+      'Define clear billing boundaries for tiered SaaS licenses.',
+      'Implement prorated credits when switching mid-cycle.',
+      'Support dunning schedules for failed card authorizations.',
+    ],
+    functionalRequirements: [
+      {
+        id: 'REQ-BIL-2.1',
+        title: 'Proration Calculations',
+        description:
+          'Calculate and issue credits for remaining days in a billing tier when user initiates an upgrade or downgrade.',
+        status: 'Draft',
+      },
+    ],
+    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
+      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Bill Check</text>
+      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Tier Calculation</text>
+      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
+      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Prorate Credit</text>
+    </svg>`,
+    userStories: [
+      {
+        actor: 'Subscriber',
+        goal: 'Be charged correctly when upgrading mid-cycle',
+        outcome: 'Do not pay full amount for overlapping days.',
+      },
+    ],
+    suggestedImprovements: [
+      { id: 'imp1', text: 'Add billing failure notifications via Webhooks', applied: false },
+    ],
+  },
+  proj4: {
+    projectName: 'AuthZ Protocol Specs',
+    executiveSummary:
+      'This document defines authorization specifications, enforcing fine-grained user group permissions and API scopes using OAuth2 JWT credentials across internal microservices.',
+    objectives: [
+      'Secure internal microservices with structured JWT tokens.',
+      'Support role hierarchies: Admin, Manager, Analyst, Viewer.',
+      'Incorporate security audit logs for critical authorization failures.',
+    ],
+    functionalRequirements: [
+      {
+        id: 'REQ-SEC-4.1',
+        title: 'JWT Role Validation',
+        description:
+          'API gateways MUST unpack JWT user claims and validate scopes prior to proxying downstream microservice requests.',
+        status: 'In Review',
+      },
+    ],
+    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
+      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Req Scope</text>
+      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">JWT Validate</text>
+      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
+      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
+      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Access Granted</text>
+    </svg>`,
+    userStories: [
+      {
+        actor: 'API Client',
+        goal: 'Request scopes relevant to task only',
+        outcome: 'Cannot access restricted user directories.',
+      },
+    ],
+    suggestedImprovements: [
+      { id: 'imp1', text: 'Implement token revocation lists', applied: false },
+    ],
+  },
+};
+
+const SEED_PROJECTS: Project[] = [
+  { id: 'proj1', name: 'CRM Integration Framework', status: 'Approved', language: 'English', timeAgo: '2h ago', category: 'CRM Architecture', icon: 'groups' },
+  { id: 'proj2', name: 'Mobile App Onboarding Flow', status: 'AI Generated', language: 'Spanish', timeAgo: '5h ago', category: 'Mobile UX Guidelines', icon: 'phone_iphone' },
+  { id: 'proj3', name: 'Subscription Billing Logic', status: 'Draft', language: 'English', timeAgo: 'Yesterday', category: 'Payments Strategy', icon: 'payments' },
+  { id: 'proj4', name: 'AuthZ Protocol Specs', status: 'In Review', language: 'German', timeAgo: '2 days ago', category: 'Security Compliance', icon: 'security' },
+];
+
+// ─── Context Types ─────────────────────────────────────────────────────────────
+
+interface AppContextValue {
+  // Navigation
+  currentView: ViewType;
+  navigate: (view: ViewType) => void;
+
+  // Auth
+  userEmail: string;
+  setUserEmail: (email: string) => void;
+
+  // Theme
+  isDark: boolean;
+  toggleDarkMode: () => void;
+
+  // Projects
+  projects: Project[];
+  selectedProjectId: string;
+  selectProject: (id: string) => void;
+  addProject: (
+    meta: { name: string; status: Project['status']; language: string; category: string; icon: string },
+    doc?: BrdDocument
+  ) => string;
+
+  // Documents
+  documents: Record<string, BrdDocument>;
+  updateDocument: (id: string, doc: BrdDocument) => void;
+
+  // Toast
+  toasts: ToastData[];
+  addToast: (message: string, type: ToastData['type']) => void;
+  removeToast: (id: string) => void;
+}
+
+// ─── Context ───────────────────────────────────────────────────────────────────
+
+const AppContext = createContext<AppContextValue | null>(null);
+
+export function AppProvider({ children }: { children: React.ReactNode }) {
+  const [currentView, setCurrentView] = useState<ViewType>('splash');
+  const [userEmail, setUserEmail] = useState('');
+  const [isDark, setIsDark] = useState<boolean>(() => {
+    try { return localStorage.getItem('isDark') === 'true'; } catch { return false; }
+  });
+  const [projects, setProjects] = useState<Project[]>(SEED_PROJECTS);
+  const [selectedProjectId, setSelectedProjectId] = useState('proj2');
+  const [documents, setDocuments] = useState<Record<string, BrdDocument>>(SEED_DOCUMENTS);
+  const [toasts, setToasts] = useState<ToastData[]>([]);
+
+  // Sync dark mode class to <html>
+  React.useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
+
+  const toggleDarkMode = useCallback(() => {
+    setIsDark(prev => {
+      const next = !prev;
+      localStorage.setItem('isDark', String(next));
+      return next;
+    });
+  }, []);
+
+  const navigate = useCallback((view: ViewType) => setCurrentView(view), []);
+
+  const selectProject = useCallback((id: string) => setSelectedProjectId(id), []);
+
+  const addProject = useCallback(
+    (
+      meta: { name: string; status: Project['status']; language: string; category: string; icon: string },
+      doc?: BrdDocument
+    ) => {
+      const id = `proj_${Date.now()}`;
+      setProjects(prev => [
+        { id, name: meta.name, status: meta.status, language: meta.language, timeAgo: 'Just now', category: meta.category, icon: meta.icon },
+        ...prev,
+      ]);
+      setDocuments(prev => ({
+        ...prev,
+        [id]: doc ?? {
+          projectName: meta.name,
+          executiveSummary: `BRD Document draft for ${meta.name}.`,
+          objectives: ['Define initial scope.', 'Formulate system integrations.'],
+          functionalRequirements: [],
+          flowchartSvg: '<svg viewBox="0 0 100 100"></svg>',
+          userStories: [],
+          suggestedImprovements: [],
+        },
+      }));
+      setSelectedProjectId(id);
+      return id;
+    },
+    []
+  );
+
+  const updateDocument = useCallback((id: string, doc: BrdDocument) => {
+    setDocuments(prev => ({ ...prev, [id]: doc }));
+  }, []);
+
+  const addToast = useCallback((message: string, type: ToastData['type']) => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts(prev => [...prev, { id, message, type }]);
+  }, []);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  return (
+    <AppContext.Provider
+      value={{
+        currentView, navigate,
+        userEmail, setUserEmail,
+        isDark, toggleDarkMode,
+        projects, selectedProjectId, selectProject, addProject,
+        documents, updateDocument,
+        toasts, addToast, removeToast,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used within AppProvider');
+  return ctx;
+}

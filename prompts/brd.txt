@@ -1,7 +1,0 @@
-# TODO: Prompt engineer to implement the Business Requirements Document (BRD) prompt template.
-# Variables that will be passed:
-# - {project_name}
-# - {structured_data}
-# - {clarification_qa}
-#
-# Define the format, sections, and tone rules for the LLM to generate the BRD draft.

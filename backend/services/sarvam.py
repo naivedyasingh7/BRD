@@ -110,5 +110,8 @@ class SarvamService:
         }
         return lang_map.get(lang, "en-IN")
 
-# Singleton instance
-sarvam_service = SarvamService()
+# Singleton — lazy: only raises at call time if key is missing
+try:
+    sarvam_service = SarvamService()
+except ValueError:
+    sarvam_service = None

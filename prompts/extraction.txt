@@ -1,5 +1,0 @@
-# TODO: Prompt engineer to implement the requirements extraction prompt template.
-# Variables that will be passed:
-# - {cleaned_input}
-#
-# Define the schema requirements and format rules for the LLM to extract structured data (JSON).
