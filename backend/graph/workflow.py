@@ -1,3 +1,4 @@
+import logging
 from langgraph.graph import StateGraph, END
 from backend.graph.state import BRDState
 from backend.graph.agents import (
@@ -8,6 +9,8 @@ from backend.graph.agents import (
     qa_agent,
     localize_agent
 )
+
+logger = logging.getLogger(__name__)
 
 def create_workflow():
     builder = StateGraph(BRDState)
@@ -35,10 +38,10 @@ def create_workflow():
         # If questions were generated but we don't have answers yet,
         # we finish execution to return the questions to the client.
         if questions and not answers:
-            print("--- [Router] Clarification questions generated. Pausing for user feedback. ---")
+            logger.info("--- [Router] Clarification questions generated. Pausing for user feedback. ---")
             return "pause_for_questions"
         
-        print("--- [Router] Proceeding directly to BRD Generation. ---")
+        logger.info("--- [Router] Proceeding directly to BRD Generation. ---")
         return "generate_brd"
 
     builder.add_conditional_edges(
