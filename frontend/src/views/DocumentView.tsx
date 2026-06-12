@@ -20,7 +20,7 @@ const TOC: { id: string; label: string; section: Section }[] = [
 ];
 
 export default function DocumentView() {
-  const { selectedProjectId, documents, updateDocument, navigate, addToast } = useApp();
+  const { selectedProjectId, documents, updateDocument, navigate, addToast, projects } = useApp();
   const doc = documents[selectedProjectId];
 
   const [activeTab, setActiveTab]       = useState('1.0');
@@ -32,6 +32,7 @@ export default function DocumentView() {
   const [newComment, setNewComment]     = useState('');
   const [geniePrompt, setGeniePrompt]   = useState('');
   const [genieLog, setGenieLog]         = useState<string[]>([]);
+  const [genieLoading, setGenieLoading] = useState(false);
   const [comments, setComments]         = useState([{
     id: 'c1', author: 'Alistair Ross', role: 'Head of Compliance',
     text: "Let's ensure we mandate dual-channel delivery (SMS & WhatsApp). Some regions experience high latency with standard SMS gateways.",
@@ -69,12 +70,32 @@ export default function DocumentView() {
   };
 
   const triggerExport = (target: string) => {
+    if (target === 'Export PDF') {
+      const content = [
+        `# ${doc.projectName}`,
+        `## Executive Summary`,
+        doc.executiveSummary,
+        `## Objectives`,
+        doc.objectives.map(o => `- ${o}`).join('\n'),
+        `## Functional Requirements`,
+        doc.functionalRequirements.map(r => `### ${r.id}: ${r.title}\n${r.description}`).join('\n\n'),
+        `## User Stories`,
+        doc.userStories.map(s => `- **${s.actor}**: ${s.goal} → ${s.outcome}`).join('\n'),
+      ].join('\n\n');
+      const blob = new Blob([content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${doc.projectName.replace(/\s+/g, '_')}_BRD.md`;
+      a.click(); URL.revokeObjectURL(url);
+      addToast('BRD downloaded as Markdown.', 'success');
+      return;
+    }
     setExportTarget(target); setExporting(true); setExportPct(0);
     const iv = setInterval(() => {
       setExportPct(p => {
         if (p >= 100) {
           clearInterval(iv);
-          setTimeout(() => { setExporting(false); addToast(`${target} exported successfully.`, 'success'); }, 600);
+          setTimeout(() => { setExporting(false); addToast(`${target} integration is not configured in this demo.`, 'info'); }, 600);
           return 100;
         }
         return p + 20;
@@ -89,14 +110,64 @@ export default function DocumentView() {
     addToast(`Incorporated: "${text}"`, 'success');
   };
 
-  const handleGeniePrompt = () => {
-    if (!geniePrompt.trim()) return;
+  const handleGeniePrompt = async () => {
+    if (!geniePrompt.trim() || genieLoading) return;
     const p = geniePrompt; setGeniePrompt('');
     setGenieLog(l => [...l, `Query: "${p}"…`]);
-    setTimeout(() => {
-      setGenieLog(l => [...l, `Genie: Noted "${p}". Constraint logged in draft specification.`]);
-      addToast('Document updated via Genie Agent.', 'success');
-    }, 900);
+    setGenieLoading(true);
+
+    const project = projects.find(pr => pr.id === selectedProjectId);
+    const markdown = doc.functionalRequirements.map(r => `### ${r.id}: ${r.title}\n${r.description}`).join('\n\n');
+    const existingBrd = `# ${doc.projectName}\n\n## Executive Summary\n${doc.executiveSummary}\n\n## Functional Requirements\n${markdown}`;
+
+    try {
+      const response = await fetch('/api/clarify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: {
+            raw_input: '',
+            cleaned_input: existingBrd,
+            structured_data: { context: doc.executiveSummary, requirements: markdown, stakeholders: '', risks: '' },
+            questions: [p],
+            answers: [p],
+            brd_draft: existingBrd,
+            final_brd: existingBrd,
+            language: project?.language ?? 'English',
+            localized_brd: '',
+          },
+          answers: [p],
+        }),
+      });
+
+      if (response.ok) {
+        const state = await response.json();
+        const updatedMarkdown = (state.final_brd as string) || (state.brd_draft as string) || '';
+        if (updatedMarkdown) {
+          const lines = updatedMarkdown.split('\n').filter((l: string) => l.startsWith('-') || l.startsWith('*'));
+          updateDocument(selectedProjectId, {
+            ...doc,
+            executiveSummary: updatedMarkdown.match(/executive summary[^\n]*\n+([^\n#][^\n]+)/i)?.[1]?.trim() ?? doc.executiveSummary,
+            suggestedImprovements: [
+              ...doc.suggestedImprovements,
+              { id: `imp_${Date.now()}`, text: `Applied: ${p}`, applied: true },
+            ],
+          });
+          setGenieLog(l => [...l, `Genie: Amendment applied (${lines.length} items updated).`]);
+          addToast('Document updated via Genie Agent.', 'success');
+        } else {
+          setGenieLog(l => [...l, `Genie: No changes returned from backend.`]);
+        }
+      } else {
+        setGenieLog(l => [...l, `Genie: Backend error. Is the server running?`]);
+        addToast('Genie request failed. Check backend connection.', 'error');
+      }
+    } catch {
+      setGenieLog(l => [...l, `Genie: Could not reach backend.`]);
+      addToast('Genie request failed. Check backend connection.', 'error');
+    } finally {
+      setGenieLoading(false);
+    }
   };
 
   const postComment = (e: React.FormEvent) => {
@@ -388,9 +459,9 @@ export default function DocumentView() {
                 placeholder="Ask Genie: 'add SLA compliance paragraph'…"
                 className="w-full h-24 bg-surface dark:bg-zinc-900 border border-black/10 dark:border-white/10 focus:border-accent-gold p-3.5 text-xs outline-none resize-none font-serif italic text-primary dark:text-white focus:ring-0"
               />
-              <button onClick={handleGeniePrompt}
-                className="w-full bg-primary dark:bg-accent-gold hover:bg-neutral-800 font-bold py-2.5 text-xs text-white dark:text-black cursor-pointer uppercase tracking-widest active:scale-95 transition-transform">
-                Incorporate Amendments
+              <button onClick={handleGeniePrompt} disabled={genieLoading}
+                className="w-full bg-primary dark:bg-accent-gold hover:bg-neutral-800 font-bold py-2.5 text-xs text-white dark:text-black cursor-pointer uppercase tracking-widest active:scale-95 transition-transform disabled:opacity-50">
+                {genieLoading ? 'Processing…' : 'Incorporate Amendments'}
               </button>
             </div>
           </aside>

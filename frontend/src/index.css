@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Base ─────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 5rem;
@@ -10,7 +9,6 @@ html {
   text-rendering: optimizeLegibility;
 }
 
-/* ── Design Tokens ────────────────────────────────────── */
 @theme {
   --font-sans:      "Jost", "Inter", system-ui, -apple-system, sans-serif;
   --font-display:   "Jost", "Clash Grotesk", "Satoshi", sans-serif;
@@ -36,7 +34,6 @@ html {
   --color-slate-655: #1E4D78;
 }
 
-/* ── Dark mode overrides ──────────────────────────────── */
 html.dark {
   color-scheme: dark;
   --color-primary:       #F0F0F0;
@@ -48,12 +45,10 @@ html.dark {
 
 html.dark body { background-color: #000000; color: #F0F0F0; }
 
-/* ── Scrollbar ────────────────────────────────────────── */
 ::-webkit-scrollbar       { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(26,120,194,0.3); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(26,120,194,0.6); }
 
-/* ── Selection ────────────────────────────────────────── */
 ::selection { background: rgba(26,120,194,0.15); color: #0D2137; }
 

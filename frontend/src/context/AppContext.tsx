@@ -177,9 +177,9 @@ const SEED_DOCUMENTS: Record<string, BrdDocument> = {
 
 const SEED_PROJECTS: Project[] = [
   { id: 'proj1', name: 'CRM Integration Framework', status: 'Approved', language: 'English', timeAgo: '2h ago', category: 'CRM Architecture', icon: 'groups' },
-  { id: 'proj2', name: 'Mobile App Onboarding Flow', status: 'AI Generated', language: 'Spanish', timeAgo: '5h ago', category: 'Mobile UX Guidelines', icon: 'phone_iphone' },
+  { id: 'proj2', name: 'Mobile App Onboarding Flow', status: 'AI Generated', language: 'Hindi', timeAgo: '5h ago', category: 'Mobile UX Guidelines', icon: 'phone_iphone' },
   { id: 'proj3', name: 'Subscription Billing Logic', status: 'Draft', language: 'English', timeAgo: 'Yesterday', category: 'Payments Strategy', icon: 'payments' },
-  { id: 'proj4', name: 'AuthZ Protocol Specs', status: 'In Review', language: 'German', timeAgo: '2 days ago', category: 'Security Compliance', icon: 'security' },
+  { id: 'proj4', name: 'AuthZ Protocol Specs', status: 'In Review', language: 'Tamil', timeAgo: '2 days ago', category: 'Security Compliance', icon: 'security' },
 ];
 
 // ─── Context Types ─────────────────────────────────────────────────────────────

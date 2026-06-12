@@ -11,14 +11,14 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@types/dompurify": "^3.0.5",
     "dompurify": "^3.4.8",
-    "motion": "^12.23.24",
+    "motion": "^11.18.2",
     "react": "^19.0.1",
     "react-dom": "^19.0.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.14",
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^25.9.2",
     "@vitejs/plugin-react": "^5.0.4",
     "tailwindcss": "^4.1.14",

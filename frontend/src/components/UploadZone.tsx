@@ -27,12 +27,12 @@ export default function UploadZone({ onFileAccepted, onError }: Props) {
         clearInterval(iv);
         setTimeout(() => {
           setProgress(null);
-          if (ext === 'txt') {
+          if (ext === 'txt' || ext === 'pdf' || ext === 'docx') {
             const reader = new FileReader();
             reader.onload = e => onFileAccepted(file, e.target?.result as string);
             reader.readAsText(file);
           } else {
-            onFileAccepted(file, `Uploaded: ${file.name}. Simulated transcription: bilingual session, OTP flow, 300-second lockout, UPI integration.`);
+            onFileAccepted(file, '');
           }
         }, 350);
       }

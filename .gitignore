@@ -1,28 +1,27 @@
-# Secrets — never commit
 .env
 
-# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
 build/
 
-# Virtual environments
 .venv/
 venv/
 env/
 
-# Runtime data
 *.db
 *.sqlite
 *.sqlite3
 *.log
 
-# OS
+frontend/node_modules/
+frontend/dist/
+
+backend/temp_audio/
+
 .DS_Store
 Thumbs.db
 
-# IDE
 .vscode/
 .idea/

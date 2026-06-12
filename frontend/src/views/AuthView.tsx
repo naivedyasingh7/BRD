@@ -201,7 +201,7 @@ export default function AuthView() {
                 </div>
 
                 <div className="flex justify-end">
-                  <button type="button" className="text-[11px] text-accent-gold hover:text-accent-gold-dark transition-colors">
+                  <button type="button" onClick={() => addToast('Password reset is not available in this demo.', 'info')} className="text-[11px] text-accent-gold hover:text-accent-gold-dark transition-colors">
                     Forgot password?
                   </button>
                 </div>

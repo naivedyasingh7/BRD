@@ -1,42 +1,44 @@
 import os
-import requests
 import logging
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
+ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".ogg", ".webm"}
+
 
 class SarvamService:
-    """
-    SarvamService handles interactions with Sarvam AI APIs for STT and Translation.
-    """
     def __init__(self):
         self.api_key = SARVAM_API_KEY
         if not self.api_key or self.api_key == "your_sarvam_api_key_here":
             logger.error("SARVAM_API_KEY is missing or invalid.")
             raise ValueError("SARVAM_API_KEY is not configured in the environment.")
-            
-        self.headers = {
-            "api-subscription-key": self.api_key
-        }
+        self.headers = {"api-subscription-key": self.api_key}
 
     def speech_to_text_translate(self, audio_file_path: str) -> str:
-        """
-        Transcribes regional speech from an audio file and translates it to English in one step.
-        Uses Sarvam's speech-to-text API.
-        """
+        safe_path = os.path.realpath(audio_file_path)
+        allowed_base = os.path.realpath(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "temp_audio")
+        )
+        if not safe_path.startswith(allowed_base):
+            raise ValueError("Invalid audio file path.")
+
+        ext = os.path.splitext(safe_path)[1].lower()
+        if ext not in ALLOWED_AUDIO_EXTENSIONS:
+            raise ValueError(f"Unsupported audio format: {ext}")
+
         url = "https://api.sarvam.ai/speech-to-text-translate"
         try:
-            with open(audio_file_path, "rb") as audio_file:
-                files = {"file": (os.path.basename(audio_file_path), audio_file, "audio/wav")}
-                data = {
-                    "prompt": "",
-                    "model": "saaras:v1"
-                }
-                logger.info(f"Sending audio file {os.path.basename(audio_file_path)} to Sarvam STT.")
+            with open(safe_path, "rb") as audio_file:
+                files = {"file": (os.path.basename(safe_path), audio_file, "audio/wav")}
+                data = {"prompt": "", "model": "saaras:v1"}
+                logger.info(f"Sending audio file {os.path.basename(safe_path)} to Sarvam STT.")
                 response = requests.post(url, headers=self.headers, files=files, data=data, timeout=120)
-                
+
             if response.status_code == 200:
                 result = response.json()
                 transcript = result.get("transcript", result.get("text", ""))
@@ -45,22 +47,21 @@ class SarvamService:
                     raise ValueError("Speech-to-Text resulted in an empty transcript. Please provide clearer audio.")
                 return transcript
             else:
-                logger.error(f"Sarvam API Error STT: {response.status_code} - {response.text}")
+                logger.error(f"Sarvam API Error STT: {response.status_code}")
                 raise ConnectionError(f"Sarvam STT API returned error code {response.status_code}")
         except requests.exceptions.Timeout:
             logger.error("Sarvam STT API request timed out.")
             raise TimeoutError("Speech-to-Text processing timed out.")
+        except (ValueError, ConnectionError, TimeoutError):
+            raise
         except Exception as e:
-            logger.error(f"Sarvam STT Exception: {e}")
-            raise RuntimeError(f"Error processing audio file: {str(e)}")
+            logger.error(f"Sarvam STT Exception: {type(e).__name__}")
+            raise RuntimeError(f"Error processing audio file: {type(e).__name__}")
 
     def translate(self, text: str, source_lang: str, target_lang: str) -> str:
-        """
-        Translates text between English and regional languages using Sarvam API.
-        """
         if target_lang.lower() == "english" and source_lang.lower() == "english":
             return text
-            
+
         url = "https://api.sarvam.ai/translate"
         payload = {
             "input": [text],
@@ -84,17 +85,18 @@ class SarvamService:
                     return translated_texts[0]
                 raise ValueError("Translation API returned empty list.")
             else:
-                logger.error(f"Sarvam API Error Translate: {response.status_code} - {response.text}")
+                logger.error(f"Sarvam API Error Translate: {response.status_code}")
                 raise ConnectionError(f"Sarvam Translate API returned error code {response.status_code}")
         except requests.exceptions.Timeout:
             logger.error("Sarvam Translate API request timed out.")
             raise TimeoutError("Translation processing timed out.")
+        except (ValueError, ConnectionError, TimeoutError):
+            raise
         except Exception as e:
-            logger.error(f"Sarvam Translate Exception: {e}")
-            raise RuntimeError(f"Error translating text: {str(e)}")
+            logger.error(f"Sarvam Translate Exception: {type(e).__name__}")
+            raise RuntimeError(f"Error translating text: {type(e).__name__}")
 
     def _map_lang_code(self, lang_name: str) -> str:
-        lang = lang_name.lower()
         lang_map = {
             "english": "en-IN",
             "hindi": "hi-IN",
@@ -108,9 +110,9 @@ class SarvamService:
             "punjabi": "pa-IN",
             "odia": "or-IN"
         }
-        return lang_map.get(lang, "en-IN")
+        return lang_map.get(lang_name.lower(), "en-IN")
 
-# Singleton — lazy: only raises at call time if key is missing
+
 try:
     sarvam_service = SarvamService()
 except ValueError:

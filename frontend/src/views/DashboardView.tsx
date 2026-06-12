@@ -23,10 +23,13 @@ const listVar = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { s
 const cardVar = { hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] } } };
 
 export default function DashboardView() {
-  const { projects, navigate, selectProject } = useApp();
+  const { projects, navigate, selectProject, userEmail } = useApp();
   const [search, setSearch] = useState('');
   const [genieQuery, setGenieQuery] = useState('');
-  const filtered = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = projects.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    p.name.toLowerCase().includes(genieQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-bg-cream dark:bg-black text-primary dark:text-white pb-28 font-sans transition-colors duration-300">
@@ -37,7 +40,7 @@ export default function DashboardView() {
         {/* Welcome */}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-12">
           <span className="text-[10px] uppercase tracking-[0.22em] text-accent-gold font-bold font-mono">Workspace Portfolio</span>
-          <h1 className="font-display text-4xl md:text-5xl text-primary dark:text-white font-semibold mt-1 mb-2 tracking-tight">Good morning, Sarah.</h1>
+          <h1 className="font-display text-4xl md:text-5xl text-primary dark:text-white font-semibold mt-1 mb-2 tracking-tight">Good morning{userEmail ? `, ${userEmail.split('@')[0]}` : ''}.</h1>
           <p className="font-editorial text-lg text-slate-655 dark:text-zinc-400 font-light italic mb-8">
             Manage requirements, refined documents, and track AI-assisted publication cycles.
           </p>
