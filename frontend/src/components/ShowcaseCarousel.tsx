@@ -61,7 +61,7 @@ export default function ShowcaseCarousel() {
       onMouseEnter={stop}
       onMouseLeave={resume}
     >
-      {/* Banner */}
+      {}
       <div className="relative aspect-[21/9] bg-slate-900 overflow-hidden">
         <AnimatePresence mode="sync">
           <motion.img
@@ -78,7 +78,7 @@ export default function ShowcaseCarousel() {
         </AnimatePresence>
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent" />
 
-        {/* Top bar */}
+        {}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
           <AnimatePresence mode="wait">
             <motion.span
@@ -99,7 +99,7 @@ export default function ShowcaseCarousel() {
           </div>
         </div>
 
-        {/* Play/pause */}
+        {}
         <button
           onClick={() => setPlaying(p => !p)}
           className="absolute bottom-4 right-4 z-20 h-8 w-8 bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white flex items-center justify-center border border-white/10 transition-all cursor-pointer active:scale-95"
@@ -108,7 +108,7 @@ export default function ShowcaseCarousel() {
           <span className="material-symbols-outlined text-sm">{playing ? 'pause' : 'play_arrow'}</span>
         </button>
 
-        {/* Title overlay */}
+        {}
         <div className="absolute bottom-0 inset-x-0 p-6">
           <AnimatePresence mode="wait">
             <motion.div
@@ -125,7 +125,7 @@ export default function ShowcaseCarousel() {
         </div>
       </div>
 
-      {/* Footer */}
+      {}
       <div className="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <AnimatePresence mode="wait">
           <motion.p

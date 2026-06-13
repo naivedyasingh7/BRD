@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { ViewType, Project, BrdDocument, ToastData } from '../types';
 
-// ─── Seed Data ────────────────────────────────────────────────────────────────
-
 const SEED_DOCUMENTS: Record<string, BrdDocument> = {
   proj1: {
     projectName: 'CRM Integration Framework',
@@ -22,16 +20,9 @@ const SEED_DOCUMENTS: Record<string, BrdDocument> = {
         status: 'Validated',
       },
     ],
-    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
-      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">CRM Sync</text>
-      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
-      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">SAP Gateway</text>
-      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
-      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Success Log</text>
-    </svg>`,
+    mermaidFlowchart: `graph TD
+      A[CRM Sync] -->|Data| B[SAP Gateway]
+      B --> C[Success Log]`,
     userStories: [
       {
         actor: 'Sales Rep',
@@ -62,16 +53,9 @@ const SEED_DOCUMENTS: Record<string, BrdDocument> = {
         status: 'Validated',
       },
     ],
-    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
-      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">SMS Req</text>
-      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
-      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Gateway Check</text>
-      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
-      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">WA Failover</text>
-    </svg>`,
+    mermaidFlowchart: `graph TD
+      A[SMS Req] --> B{Gateway Check}
+      B -->|Timeout| C[WA Failover]`,
     userStories: [
       {
         actor: 'Retail Borrower',
@@ -113,16 +97,9 @@ const SEED_DOCUMENTS: Record<string, BrdDocument> = {
         status: 'Draft',
       },
     ],
-    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
-      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Bill Check</text>
-      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
-      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Tier Calculation</text>
-      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
-      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Prorate Credit</text>
-    </svg>`,
+    mermaidFlowchart: `graph TD
+      A[Bill Check] --> B[Tier Calculation]
+      B --> C[Prorate Credit]`,
     userStories: [
       {
         actor: 'Subscriber',
@@ -152,16 +129,9 @@ const SEED_DOCUMENTS: Record<string, BrdDocument> = {
         status: 'In Review',
       },
     ],
-    flowchartSvg: `<svg viewBox="0 0 400 160" fill="none" class="w-full max-w-lg h-32 mx-auto">
-      <rect x="10" y="40" width="80" height="40" rx="0" fill="#6d5ef5" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="50" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Req Scope</text>
-      <path d="M 90 60 L 140 60" stroke="var(--color-accent-gold)" stroke-width="1.5" stroke-dasharray="3,3"/>
-      <rect x="150" y="40" width="100" height="40" rx="0" fill="#016678" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <text x="200" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">JWT Validate</text>
-      <path d="M 250 60 L 300 60" stroke="var(--color-accent-gold)" stroke-width="1.5"/>
-      <rect x="310" y="40" width="80" height="40" rx="0" fill="#14532d" fill-opacity="0.1" stroke="var(--color-accent-gold)" stroke-opacity="0.7" stroke-width="1.5"/>
-      <text x="350" y="65" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">Access Granted</text>
-    </svg>`,
+    mermaidFlowchart: `graph TD
+      A[Req Scope] --> B[JWT Validate]
+      B -->|Valid| C[Access Granted]`,
     userStories: [
       {
         actor: 'API Client',
@@ -182,22 +152,13 @@ const SEED_PROJECTS: Project[] = [
   { id: 'proj4', name: 'AuthZ Protocol Specs', status: 'In Review', language: 'German', timeAgo: '2 days ago', category: 'Security Compliance', icon: 'security' },
 ];
 
-// ─── Context Types ─────────────────────────────────────────────────────────────
-
 interface AppContextValue {
-  // Navigation
   currentView: ViewType;
   navigate: (view: ViewType) => void;
-
-  // Auth
   userEmail: string;
   setUserEmail: (email: string) => void;
-
-  // Theme
   isDark: boolean;
   toggleDarkMode: () => void;
-
-  // Projects
   projects: Project[];
   selectedProjectId: string;
   selectProject: (id: string) => void;
@@ -205,18 +166,12 @@ interface AppContextValue {
     meta: { name: string; status: Project['status']; language: string; category: string; icon: string },
     doc?: BrdDocument
   ) => string;
-
-  // Documents
   documents: Record<string, BrdDocument>;
   updateDocument: (id: string, doc: BrdDocument) => void;
-
-  // Toast
   toasts: ToastData[];
   addToast: (message: string, type: ToastData['type']) => void;
   removeToast: (id: string) => void;
 }
-
-// ─── Context ───────────────────────────────────────────────────────────────────
 
 const AppContext = createContext<AppContextValue | null>(null);
 
@@ -230,8 +185,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [selectedProjectId, setSelectedProjectId] = useState('proj2');
   const [documents, setDocuments] = useState<Record<string, BrdDocument>>(SEED_DOCUMENTS);
   const [toasts, setToasts] = useState<ToastData[]>([]);
-
-  // Sync dark mode class to <html>
   React.useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark);
   }, [isDark]);
@@ -265,7 +218,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           executiveSummary: `BRD Document draft for ${meta.name}.`,
           objectives: ['Define initial scope.', 'Formulate system integrations.'],
           functionalRequirements: [],
-          flowchartSvg: '<svg viewBox="0 0 100 100"></svg>',
+          mermaidFlowchart: 'graph TD\\n    A[Start] --> B[End]',
           userStories: [],
           suggestedImprovements: [],
         },

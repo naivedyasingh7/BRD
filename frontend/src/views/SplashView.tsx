@@ -16,17 +16,17 @@ export default function SplashView() {
 
   return (
     <div className="relative min-h-screen w-full flex flex-col overflow-hidden bg-white dark:bg-black transition-colors duration-500">
-      {/* Starfield — always visible, adapts to theme */}
+      {}
       <div className="absolute inset-0 z-0">
         <AmbientCanvas isDark={isDark} />
       </div>
 
-      {/* Light mode gradient wash on top of canvas */}
+      {}
       {!isDark && (
         <div className="absolute inset-0 z-0 bg-gradient-to-br from-blue-50/80 via-white/60 to-slate-50/80" />
       )}
 
-      {/* Top-right actions */}
+      {}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-3">
         <ThemeToggle />
         <button
@@ -37,7 +37,7 @@ export default function SplashView() {
         </button>
       </div>
 
-      {/* Centre — logo + title */}
+      {}
       <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 text-center">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -67,7 +67,7 @@ export default function SplashView() {
         </AnimatePresence>
       </div>
 
-      {/* Bottom — tagline + button */}
+      {}
       <AnimatePresence>
         {revealed && (
           <motion.div

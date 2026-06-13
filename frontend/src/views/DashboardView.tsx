@@ -34,7 +34,7 @@ export default function DashboardView() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
 
-        {/* Welcome */}
+        {}
         <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="mb-12">
           <span className="text-[10px] uppercase tracking-[0.22em] text-accent-gold font-bold font-mono">Workspace Portfolio</span>
           <h1 className="font-display text-4xl md:text-5xl text-primary dark:text-white font-semibold mt-1 mb-2 tracking-tight">Good morning, Sarah.</h1>
@@ -44,7 +44,7 @@ export default function DashboardView() {
           <ShowcaseCarousel />
         </motion.section>
 
-        {/* Quick actions */}
+        {}
         <motion.section variants={listVar} initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12"
         >
@@ -69,10 +69,10 @@ export default function DashboardView() {
           ))}
         </motion.section>
 
-        {/* Projects + Activity */}
+        {}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-          {/* Projects */}
+          {}
           <div className="lg:col-span-8">
             <div className="flex justify-between items-center mb-6 pb-3 border-b border-black/5 dark:border-white/10">
               <h2 className="font-display text-2xl text-primary dark:text-white font-semibold tracking-tight">Active Manuscripts</h2>
@@ -81,7 +81,7 @@ export default function DashboardView() {
               </button>
             </div>
 
-            {/* Search */}
+            {}
             <div className="relative mb-6">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-400 text-[18px]">search</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search projects…"
@@ -121,7 +121,7 @@ export default function DashboardView() {
             )}
           </div>
 
-          {/* Activity */}
+          {}
           <div className="lg:col-span-4 space-y-6">
             <h2 className="font-display text-2xl text-primary dark:text-white font-semibold tracking-tight">Chronicle Log</h2>
             <motion.div variants={listVar} initial="hidden" whileInView="visible" viewport={{ once: true }}
@@ -140,7 +140,7 @@ export default function DashboardView() {
               ))}
             </motion.div>
 
-            {/* Pro tip */}
+            {}
             <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
               className="p-6 bg-accent-gold dark:bg-accent-purple/80 text-white relative overflow-hidden"
             >
@@ -162,7 +162,7 @@ export default function DashboardView() {
         </div>
       </main>
 
-      {/* Genie bar */}
+      {}
       <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-xl px-4 z-50">
         <div className="backdrop-blur-xl bg-surface/95 dark:bg-[#111111]/95 border border-black/15 dark:border-white/10 shadow-2xl px-5 h-14 flex items-center gap-3 focus-within:border-accent-gold transition-all rounded-2xl">
           <span className="material-symbols-outlined text-accent-gold text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>

@@ -34,9 +34,12 @@ def create_workflow():
     def clarification_router(state: BRDState):
         questions = state.get("questions", [])
         answers = state.get("answers", [])
+<<<<<<< Updated upstream
         
         # If questions were generated but we don't have answers yet,
         # we finish execution to return the questions to the client.
+=======
+>>>>>>> Stashed changes
         if questions and not answers:
             logger.info("--- [Router] Clarification questions generated. Pausing for user feedback. ---")
             return "pause_for_questions"

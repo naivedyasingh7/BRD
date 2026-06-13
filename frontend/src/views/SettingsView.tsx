@@ -51,7 +51,7 @@ export default function SettingsView() {
       <Navbar active="settings" />
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-        {/* Page header */}
+        {}
         <motion.div initial="hidden" animate="visible" variants={cardVar} className="mb-10">
           <span className="text-[10px] uppercase tracking-[0.22em] text-accent-gold font-sans font-bold font-mono">Account</span>
           <h1 className="font-sans text-4xl font-semibold text-primary dark:text-white mt-1 mb-2 tracking-tight">Settings</h1>
@@ -62,7 +62,7 @@ export default function SettingsView() {
 
         <div className="space-y-6">
 
-          {/* Profile */}
+          {}
           <motion.section variants={cardVar} initial="hidden" animate="visible"
             className="bg-surface dark:bg-[#111111] border border-black/5 dark:border-white/10 p-8 shadow-sm"
           >
@@ -84,7 +84,7 @@ export default function SettingsView() {
             </div>
           </motion.section>
 
-          {/* Preferences */}
+          {}
           <motion.section variants={cardVar} initial="hidden" animate="visible"
             className="bg-surface dark:bg-[#111111] border border-black/5 dark:border-white/10 p-8 shadow-sm"
           >
@@ -113,7 +113,7 @@ export default function SettingsView() {
             </div>
           </motion.section>
 
-          {/* Sign out — no "Danger Zone" heading */}
+          {}
           <motion.section variants={cardVar} initial="hidden" animate="visible"
             className="bg-surface dark:bg-[#111111] border border-red-100 dark:border-red-900/30 p-8 shadow-sm"
           >

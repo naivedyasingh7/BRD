@@ -21,8 +21,6 @@ function pwStrength(p: string) {
 }
 const STRENGTH_LABEL = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLOR = ['', 'bg-red-400', 'bg-amber-400', 'bg-lime-400', 'bg-emerald-400'];
-
-// Input styles: dark bg in dark mode, white bg in light mode
 const INPUT = `w-full px-3 py-2.5 rounded-lg text-sm transition-all focus:outline-none
   bg-black/10 dark:bg-white/5
   border border-black/15 dark:border-white/10
@@ -150,22 +148,22 @@ export default function AuthView() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-bg-cream dark:bg-black p-4 overflow-auto py-10 transition-colors duration-500">
 
-      {/* Canvas — always visible, adapts to theme */}
+      {}
       <div className="fixed inset-0 z-0">
         <AmbientCanvas isDark={isDark} />
       </div>
 
-      {/* Light mode gradient wash */}
+      {}
       {!isDark && (
         <div className="fixed inset-0 z-0 bg-gradient-to-br from-blue-50/80 via-white/60 to-slate-50/80" />
       )}
 
-      {/* Theme toggle */}
+      {}
       <div className="fixed top-5 right-5 z-30">
         <ThemeToggle />
       </div>
 
-      {/* Card */}
+      {}
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -173,7 +171,7 @@ export default function AuthView() {
         className="relative z-10 w-full max-w-4xl flex rounded-2xl overflow-hidden shadow-2xl shadow-black/10 dark:shadow-black/60"
         style={{ minHeight: '560px' }}
       >
-        {/* ── Left branding panel ── */}
+        {}
         <div className="hidden md:flex w-[38%] shrink-0 flex-col p-10 bg-slate-100 dark:bg-[#111827]/80 backdrop-blur-xl border-r border-black/8 dark:border-white/8">
           <div className="flex-1 flex flex-col items-center justify-center -mt-8">
             <button
@@ -199,17 +197,17 @@ export default function AuthView() {
           </div>
         </div>
 
-        {/* ── Right form panel ── */}
+        {}
         <div className="flex-1 bg-white dark:bg-[#141b2d]/90 backdrop-blur-xl p-8 md:p-10 flex flex-col justify-center overflow-y-auto">
 
-          {/* Header */}
+          {}
           <div className="mb-6">
             <h1 className="text-xl font-bold text-primary dark:text-white uppercase tracking-widest">
               {isSignIn ? 'Welcome back.' : 'Register your account'}
             </h1>
           </div>
 
-          {/* Tab toggle */}
+          {}
           <div className="flex mb-6 border border-black/10 dark:border-white/10 rounded-lg overflow-hidden w-fit">
             {['Sign In', 'Sign Up'].map((label, i) => (
               <button key={label} type="button"
@@ -227,7 +225,7 @@ export default function AuthView() {
 
           <AnimatePresence mode="wait">
             {isSignIn ? (
-              /* ── SIGN IN FORM ── */
+              
               <motion.form key="signin"
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.2 }}
@@ -312,13 +310,13 @@ export default function AuthView() {
               </motion.form>
 
             ) : (
-              /* ── SIGN UP FORM ── */
+              
               <motion.form key="signup"
                 initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
                 transition={{ duration: 0.2 }}
                 onSubmit={handleSubmit} className="space-y-5" noValidate
               >
-                {/* PERSONAL INFO */}
+                {}
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-450 dark:text-white/30 mb-3">Personal Info</p>
                   <div className="grid grid-cols-2 gap-3 mb-3">
@@ -356,7 +354,7 @@ export default function AuthView() {
                   </div>
                 </div>
 
-                {/* CONTACT DETAILS */}
+                {}
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-450 dark:text-white/30 mb-3">Contact Details</p>
                   <div className="space-y-3">
@@ -383,7 +381,7 @@ export default function AuthView() {
                   </div>
                 </div>
 
-                {/* SECURITY */}
+                {}
                 <div>
                   <p className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-450 dark:text-white/30 mb-3">Security</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -429,7 +427,7 @@ export default function AuthView() {
                   </div>
                 </div>
 
-                {/* Terms */}
+                {}
                 <div>
                   <label className="flex items-start gap-3 cursor-pointer">
                     <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}

@@ -74,8 +74,8 @@ Voice/Text Input
 | Backend Framework | FastAPI |
 | Agent Orchestration | LangGraph |
 | AI Agents | CrewAI |
-| LLM | Groq (llama3-70b-8192) via LangChain |
-| Speech-to-Text | Sarvam AI (`saaras:v1`) |
+| LLM | Groq (`llama3-8b-8192`) via LangChain |
+| Speech-to-Text | Sarvam AI (`saaras:v1`) with fallback to Groq Whisper |
 | Translation | Sarvam AI (`mayura:v1`) |
 | Database | SQLite (via `brd_history.db`) |
 
@@ -282,5 +282,5 @@ English, Hindi, Tamil, Telugu, Bengali, Marathi, Kannada, Gujarati, Malayalam
 ## Notes
 
 - Without `GROQ_API_KEY` the backend boots but returns `503` on generation endpoints. The frontend displays a toast with the error.
-- Without `SARVAM_API_KEY` audio upload is disabled; text inputs still work and translation falls back to returning the English BRD as-is.
+- Without `SARVAM_API_KEY`, audio uploads automatically fall back to Groq Whisper for English transcription. Regional Indian languages require the Sarvam API key.
 - The `/api` proxy in `vite.config.ts` forwards all frontend API calls to `http://127.0.0.1:8000` automatically — no CORS issues in development.

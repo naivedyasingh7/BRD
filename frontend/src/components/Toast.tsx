@@ -24,7 +24,7 @@ function ToastItem({ id, message, type }: { id:string; message:string; type:keyo
       className={`relative flex items-center gap-3 pl-4 pr-3 py-3 rounded-2xl border backdrop-blur-xl overflow-hidden max-w-[340px] w-full shadow-xl ${c.bg}`}
       role="alert"
     >
-      {/* Progress bar */}
+      {}
       <motion.div
         className={`absolute bottom-0 left-0 h-[2px] ${c.bar}`}
         initial={{ width:'100%' }} animate={{ width:'0%' }}

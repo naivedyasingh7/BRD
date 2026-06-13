@@ -19,14 +19,12 @@ export default function AmbientCanvas({ isDark = false }: { isDark?: boolean }) 
 
     const init = () => {
       const W = canvas.width, H = canvas.height, S = Math.min(W, H);
-      // Subtle blue-only ambient blobs — no purple, no gold
       orbs = [
         { x:W*0.20, y:H*0.25, r:S*0.55, vx:0.05,  vy:0.04,  rgb: isDark?'96,184,240':'96,184,240',  a: isDark?0.06:0.07 },
         { x:W*0.80, y:H*0.70, r:S*0.50, vx:-0.04, vy:-0.05, rgb: isDark?'96,184,240':'137,207,245', a: isDark?0.04:0.04 },
         { x:W*0.50, y:H*0.50, r:S*0.40, vx:-0.05, vy:0.04,  rgb: isDark?'96,184,240':'96,184,240',  a: isDark?0.03:0.04 },
         { x:W*0.75, y:H*0.20, r:S*0.30, vx:0.06,  vy:0.07,  rgb: isDark?'255,255,255':'26,26,26',    a: isDark?0.015:0.02 },
       ];
-      // Constellation stars
       const n = Math.min(60, Math.floor((W * H) / 20000));
       stars = Array.from({ length: n }, () => {
         const isBlue = Math.random() > 0.3;
@@ -43,8 +41,6 @@ export default function AmbientCanvas({ isDark = false }: { isDark?: boolean }) 
     const draw = () => {
       const W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
-
-      // Draw orbs
       for (const o of orbs) {
         o.x += o.vx; o.y += o.vy;
         if (o.x < -o.r/2 || o.x > W+o.r/2) o.vx *= -1;
@@ -56,15 +52,11 @@ export default function AmbientCanvas({ isDark = false }: { isDark?: boolean }) 
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI*2); ctx.fill();
       }
-
-      // Draw stars + connections
       for (let i = 0; i < stars.length; i++) {
         const s = stars[i];
         s.x += s.vx; s.y += s.vy;
         if (s.x < 0) s.x = W; if (s.x > W) s.x = 0;
         if (s.y < 0) s.y = H; if (s.y > H) s.y = 0;
-
-        // Star dot with soft glow
         const sg = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 3);
         sg.addColorStop(0, `rgba(${s.rgb},${s.a})`);
         sg.addColorStop(1, `rgba(${s.rgb},0)`);
@@ -73,8 +65,6 @@ export default function AmbientCanvas({ isDark = false }: { isDark?: boolean }) 
 
         ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
         ctx.fillStyle = `rgba(${s.rgb},${s.a * 1.5})`; ctx.fill();
-
-        // Connect nearby stars
         for (let j = i+1; j < stars.length; j++) {
           const t = stars[j];
           const d = Math.hypot(s.x-t.x, s.y-t.y);

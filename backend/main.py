@@ -6,6 +6,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+<<<<<<< Updated upstream
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger("FastAPI")
@@ -24,6 +25,34 @@ from backend.database import save_brd, get_all_brds, get_brd_by_id
 app = FastAPI(title="BRD Genie Backend API")
 
 # Enable CORS for frontend integration
+=======
+from backend.database import init_db
+from backend.services.config import is_groq_configured
+from backend.api.router import router as api_router
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s (%(threadName)s): %(message)s'
+)
+logger = logging.getLogger("BRDGenie")
+try:
+    init_db()
+    logger.info("Database initialized successfully.")
+except Exception as e:
+    logger.error(f"Database initialization failed: {type(e).__name__} - {str(e)}")
+app = FastAPI(
+    title="BRD Genie Backend API",
+    description="Refactored, production-ready, observable multi-agent backend using LangGraph, CrewAI, Groq and Sarvam.",
+    version="1.0.0"
+)
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+>>>>>>> Stashed changes
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -31,7 +60,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 @app.get("/api/health")
 def health():
     return {"status": "ok", "agents_ready": AGENTS_READY}
@@ -66,6 +98,7 @@ async def start_session(
         "language": language,
         "localized_brd": ""
     }
+<<<<<<< Updated upstream
 
     if file:
         file_path = os.path.join(TEMP_DIR, file.filename)
@@ -80,6 +113,9 @@ async def start_session(
     else:
         state_input["raw_input"] = raw_text
         logger.info("Raw text input received.")
+=======
+app.include_router(api_router, prefix="/api")
+>>>>>>> Stashed changes
 
     try:
         logger.info("--- Initiating LangGraph Execution ---")

@@ -4,8 +4,12 @@ from langchain_groq import ChatGroq
 
 logger = logging.getLogger(__name__)
 
+<<<<<<< Updated upstream
 # Get API key
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+=======
+GROQ_MODEL = "groq/llama3-8b-8192"
+>>>>>>> Stashed changes
 
 class LLMService:
     """

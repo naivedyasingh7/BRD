@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import DOMPurify from 'dompurify';
+import mermaid from 'mermaid';
 import Navbar from '../components/Navbar';
 import { useApp } from '../context/AppContext';
 
@@ -8,6 +9,26 @@ const STATUS_STYLE: Record<string, string> = {
   Validated:  'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
   'In Review':'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800',
   Draft:      'bg-slate-50 dark:bg-zinc-900 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700',
+};
+
+const MermaidDiagram = ({ chart }: { chart?: string }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: { primaryColor: '#016678', primaryTextColor: '#fff', primaryBorderColor: '#6d5ef5', lineColor: '#cda869' } });
+    if (chart && containerRef.current) {
+      mermaid.render(`mermaid-${Math.random().toString(36).substring(7)}`, chart).then(({ svg }) => {
+        if (containerRef.current) {
+          containerRef.current.innerHTML = DOMPurify.sanitize(svg, SVG_PURIFY_CONFIG);
+        }
+      }).catch(err => {
+         console.error(err);
+         if (containerRef.current) containerRef.current.innerHTML = `<div class="text-red-500 text-xs">Failed to render diagram</div>`;
+      });
+    }
+  }, [chart]);
+
+  return <div ref={containerRef} className="w-full flex justify-center text-white" />;
 };
 
 type Section = 'executive' | 'objectives' | 'functional' | 'visuals' | 'stories';
@@ -89,6 +110,7 @@ export default function DocumentView() {
     addToast(`Incorporated: "${text}"`, 'success');
   };
 
+<<<<<<< Updated upstream
   const handleGeniePrompt = () => {
     if (!geniePrompt.trim()) return;
     const p = geniePrompt; setGeniePrompt('');
@@ -97,6 +119,91 @@ export default function DocumentView() {
       setGenieLog(l => [...l, `Genie: Noted "${p}". Constraint logged in draft specification.`]);
       addToast('Document updated via Genie Agent.', 'success');
     }, 900);
+=======
+  const handleGeniePrompt = async (mode: 'amend' | 'chat') => {
+    if (!geniePrompt.trim() || genieLoading) return;
+    const p = geniePrompt; setGeniePrompt('');
+    setGenieLog(l => [...l, mode === 'amend' ? `Query: "${p}"…` : `You: "${p}"`]);
+    setGenieLoading(true);
+
+    if (mode === 'chat') {
+       if (!doc.dbId) {
+          setGenieLog(l => [...l, `Genie: Cannot query local/mock documents.`]);
+          setGenieLoading(false);
+          return;
+       }
+       try {
+         const res = await fetch('/api/chat', {
+           method: 'POST', headers: { 'Content-Type': 'application/json' },
+           body: JSON.stringify({ brd_id: doc.dbId, question: p })
+         });
+         if (res.ok) {
+           const data = await res.json();
+           setGenieLog(l => [...l, `Genie: ${data.answer}`]);
+         } else {
+           setGenieLog(l => [...l, `Genie: Failed to fetch answer.`]);
+         }
+       } catch {
+         setGenieLog(l => [...l, `Genie: Could not reach backend.`]);
+       } finally {
+         setGenieLoading(false);
+       }
+       return;
+    }
+
+    const project = projects.find(pr => pr.id === selectedProjectId);
+    const markdown = doc.functionalRequirements.map(r => `### ${r.id}: ${r.title}\n${r.description}`).join('\n\n');
+    const existingBrd = `# ${doc.projectName}\n\n## Executive Summary\n${doc.executiveSummary}\n\n## Functional Requirements\n${markdown}`;
+
+    try {
+      const response = await fetch('/api/clarify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: {
+            raw_input: '',
+            cleaned_input: existingBrd,
+            structured_data: { context: doc.executiveSummary, requirements: markdown, stakeholders: '', risks: '' },
+            questions: [p],
+            answers: [p],
+            brd_draft: existingBrd,
+            final_brd: existingBrd,
+            language: project?.language ?? 'English',
+            localized_brd: '',
+          },
+          answers: [p],
+        }),
+      });
+
+      if (response.ok) {
+        const state = await response.json();
+        const updatedMarkdown = (state.final_brd as string) || (state.brd_draft as string) || '';
+        if (updatedMarkdown) {
+          const lines = updatedMarkdown.split('\n').filter((l: string) => l.startsWith('-') || l.startsWith('*'));
+          updateDocument(selectedProjectId, {
+            ...doc,
+            executiveSummary: updatedMarkdown.match(/executive summary[^\n]*\n+([^\n#][^\n]+)/i)?.[1]?.trim() ?? doc.executiveSummary,
+            suggestedImprovements: [
+              ...doc.suggestedImprovements,
+              { id: `imp_${Date.now()}`, text: `Applied: ${p}`, applied: true },
+            ],
+          });
+          setGenieLog(l => [...l, `Genie: Amendment applied (${lines.length} items updated).`]);
+          addToast('Document updated via Genie Agent.', 'success');
+        } else {
+          setGenieLog(l => [...l, `Genie: No changes returned from backend.`]);
+        }
+      } else {
+        setGenieLog(l => [...l, `Genie: Backend error. Is the server running?`]);
+        addToast('Genie request failed. Check backend connection.', 'error');
+      }
+    } catch {
+      setGenieLog(l => [...l, `Genie: Could not reach backend.`]);
+      addToast('Genie request failed. Check backend connection.', 'error');
+    } finally {
+      setGenieLoading(false);
+    }
+>>>>>>> Stashed changes
   };
 
   const postComment = (e: React.FormEvent) => {
@@ -110,7 +217,10 @@ export default function DocumentView() {
   return (
     <div className="min-h-screen bg-bg-cream dark:bg-black text-primary dark:text-white pb-24 font-sans transition-colors duration-300">
 
+<<<<<<< Updated upstream
       {/* Export modal */}
+=======
+>>>>>>> Stashed changes
       <AnimatePresence>
         {exporting && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -137,7 +247,10 @@ export default function DocumentView() {
         )}
       </AnimatePresence>
 
+<<<<<<< Updated upstream
       {/* Diagram zoom lightbox */}
+=======
+>>>>>>> Stashed changes
       <AnimatePresence>
         {zoomed && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -155,8 +268,14 @@ export default function DocumentView() {
               <div className="bg-[#1A1A1A] p-8 rounded-xl flex items-center justify-center overflow-auto max-h-[65vh]">
                 <motion.div drag dragConstraints={{ left: -120, right: 120, top: -120, bottom: 120 }}
                   className="w-full max-w-2xl cursor-grab active:cursor-grabbing"
+<<<<<<< Updated upstream
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.flowchartSvg) }}
                 />
+=======
+                >
+                  {doc.mermaidFlowchart ? <MermaidDiagram chart={doc.mermaidFlowchart} /> : <div className="text-slate-500 italic text-sm">Flowchart not generated</div>}
+                </motion.div>
+>>>>>>> Stashed changes
               </div>
               <p className="text-[9px] font-mono uppercase tracking-widest text-slate-450 dark:text-zinc-500 mt-5">Drag to pan · Click outside to dismiss</p>
             </motion.div>
@@ -317,7 +436,11 @@ export default function DocumentView() {
               </div>
               <div onClick={() => setZoomed(true)} className="bg-[#1A1A1A] p-8 border border-black/10 dark:border-white/10 flex justify-center items-center relative group cursor-zoom-in overflow-hidden">
                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+<<<<<<< Updated upstream
                 <div className="w-full text-white" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.flowchartSvg) }} />
+=======
+                {doc.mermaidFlowchart ? <MermaidDiagram chart={doc.mermaidFlowchart} /> : <div className="text-slate-500 italic text-sm">Flowchart not generated</div>}
+>>>>>>> Stashed changes
                 <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-mono tracking-widest text-accent-gold/70 uppercase">[Click to zoom]</p>
               </div>
             </div>
@@ -385,13 +508,26 @@ export default function DocumentView() {
                 </div>
               )}
               <textarea value={geniePrompt} onChange={e => setGeniePrompt(e.target.value)}
-                placeholder="Ask Genie: 'add SLA compliance paragraph'…"
+                placeholder="Ask Genie a question or request an amendment…"
                 className="w-full h-24 bg-surface dark:bg-zinc-900 border border-black/10 dark:border-white/10 focus:border-accent-gold p-3.5 text-xs outline-none resize-none font-serif italic text-primary dark:text-white focus:ring-0"
               />
+<<<<<<< Updated upstream
               <button onClick={handleGeniePrompt}
                 className="w-full bg-primary dark:bg-accent-gold hover:bg-neutral-800 font-bold py-2.5 text-xs text-white dark:text-black cursor-pointer uppercase tracking-widest active:scale-95 transition-transform">
                 Incorporate Amendments
               </button>
+=======
+              <div className="flex gap-2">
+                <button onClick={() => handleGeniePrompt('chat')} disabled={genieLoading}
+                  className="flex-1 bg-surface dark:bg-zinc-800 border border-black/10 dark:border-white/10 hover:border-accent-gold font-bold py-2.5 text-[10px] text-primary dark:text-white cursor-pointer uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                  Ask Question
+                </button>
+                <button onClick={() => handleGeniePrompt('amend')} disabled={genieLoading}
+                  className="flex-1 bg-primary dark:bg-accent-gold hover:bg-neutral-800 font-bold py-2.5 text-[10px] text-white dark:text-black cursor-pointer uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50">
+                  {genieLoading ? 'Processing…' : 'Amend BRD'}
+                </button>
+              </div>
+>>>>>>> Stashed changes
             </div>
           </aside>
         </div>

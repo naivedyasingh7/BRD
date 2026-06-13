@@ -23,13 +23,13 @@ export default function Navbar({ active }: { active: ViewType }) {
         className="bg-white/90 dark:bg-[#111111]/70 backdrop-blur-md border border-black/8 dark:border-white/10 shadow-sm rounded-full h-14 max-w-7xl mx-auto flex items-center px-5"
       >
         <div className="flex justify-between items-center w-full">
-          {/* Brand */}
+          {}
           <button onClick={() => navigate('splash')} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <BrandLogo size="sm" />
             <span className="font-serif text-sm font-bold italic text-primary dark:text-white hidden sm:inline">BRD Genie</span>
           </button>
 
-          {/* Links */}
+          {}
           <div className="flex items-center gap-4 sm:gap-5">
             {NAV_LINKS.map(({ label, view }) => (
               <button
@@ -46,7 +46,7 @@ export default function Navbar({ active }: { active: ViewType }) {
             ))}
           </div>
 
-          {/* Right controls */}
+          {}
           <div className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
             <button

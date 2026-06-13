@@ -40,7 +40,7 @@ trap cleanup SIGINT SIGTERM
 # Start backend
 echo -e "${GREEN}🚀  Starting backend on http://127.0.0.1:8000${NC}"
 cd "$ROOT"
-.venv/bin/uvicorn backend.main:app --reload --port 8000 &
+.venv/bin/uvicorn backend.main:app --port 8000 &
 BACKEND_PID=$!
 
 # Start frontend

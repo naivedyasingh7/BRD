@@ -42,7 +42,7 @@ export interface BrdDocument {
   executiveSummary: string;
   objectives: string[];
   functionalRequirements: FunctionalRequirement[];
-  flowchartSvg: string;
+  mermaidFlowchart?: string;
   userStories: UserStory[];
   suggestedImprovements: {
     id: string;

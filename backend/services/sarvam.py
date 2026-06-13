@@ -7,6 +7,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
 
+<<<<<<< Updated upstream
 class SarvamService:
     """
     SarvamService handles interactions with Sarvam AI APIs for STT and Translation.
@@ -21,6 +22,10 @@ class SarvamService:
             "api-subscription-key": self.api_key
         }
 
+=======
+class SarvamServiceFacade:
+    
+>>>>>>> Stashed changes
     def speech_to_text_translate(self, audio_file_path: str) -> str:
         """
         Transcribes regional speech from an audio file and translates it to English in one step.
