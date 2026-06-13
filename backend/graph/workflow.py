@@ -1,7 +1,7 @@
 import logging
 from langgraph.graph import StateGraph, END
 from backend.graph.state import BRDState
-from backend.graph.agents import (
+from backend.graph.nodes import (
     input_agent,
     extract_agent,
     clarify_agent,
@@ -29,6 +29,7 @@ def create_workflow():
     def clarification_router(state: BRDState):
         questions = state.get("questions", [])
         answers = state.get("answers", [])
+        # If we have questions but no answers yet, pause execution (return to user)
         if questions and not answers:
             return "pause_for_questions"
         return "generate_brd"
