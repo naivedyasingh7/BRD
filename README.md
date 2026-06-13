@@ -2,6 +2,8 @@
 
 > AI-powered requirements engineering that turns chaotic conversations into audit-ready specifications — built for Bharat.
 
+> ⚡ **Hackathon Prototype** — Built for rapid demo. Auth is mocked, DB is SQLite, no rate limiting.
+
 ---
 
 ## What it does
@@ -46,17 +48,17 @@ Voice/Text Input
       ↓
   Input Agent        — Sarvam STT + translation to English
       ↓
-  Extract Agent      — CrewAI Discovery Crew (context, requirements, stakeholders)
-      ↓
-  Clarify Agent      — CrewAI Validation Crew (ambiguity detection, risk analysis)
+  Extract Agent      — CrewAI Discovery Crew (context → requirements → stakeholders)
+      ↓                 Tasks chained with context= for coherent output
+  Clarify Agent      — CrewAI Validation Crew (ambiguity detection → risk analysis)
       ↓
   Ambiguity found? ──Yes──▶ Pause → return questions to frontend
                               ↓ (user answers)
          No ──────────────▶ BRD Agent
                                 ↓
-                           QA Agent       — pass-through, promotes draft to final
+                           QA Agent       — 10-point audit checklist, Indian compliance
                                 ↓
-                           Localize Agent — Sarvam AI translation to target language
+                           Localize Agent — Sarvam AI chunked translation to target language
                                 ↓
                            Final BRD (English + Localized)
 ```
@@ -74,9 +76,9 @@ Voice/Text Input
 | Backend Framework | FastAPI |
 | Agent Orchestration | LangGraph |
 | AI Agents | CrewAI |
-| LLM | Groq (llama3-70b-8192) via LangChain |
+| LLM | Groq (llama3-70b-8192) via CrewAI LLM |
 | Speech-to-Text | Sarvam AI (`saaras:v1`) |
-| Translation | Sarvam AI (`mayura:v1`) |
+| Translation | Sarvam AI (`mayura:v1`) — chunked for large BRDs |
 | Database | SQLite (via `brd_history.db`) |
 
 ---
@@ -91,10 +93,11 @@ BRD/
 │   │   ├── state.py         # BRDState TypedDict
 │   │   └── workflow.py      # LangGraph StateGraph definition
 │   ├── services/
-│   │   ├── llm.py           # Shared ChatGroq singleton
-│   │   └── sarvam.py        # Sarvam AI STT + translation service
+│   │   ├── llm.py           # Shared CrewAI LLM singleton (Groq)
+│   │   └── sarvam.py        # Sarvam AI STT + chunked translation service
+│   ├── temp_audio/          # Uploaded audio files (auto-deleted after processing)
 │   ├── database.py          # SQLite read/write helpers
-│   └── main.py              # FastAPI app, routes, CORS
+│   └── main.py              # FastAPI app, routes, security headers, input validation
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
@@ -104,25 +107,26 @@ BRD/
 │   │   │   ├── ShowcaseCarousel.tsx # Auto-advancing feature carousel
 │   │   │   ├── ThemeToggle.tsx      # Light/dark toggle
 │   │   │   ├── Toast.tsx            # Toast notification stack
-│   │   │   └── UploadZone.tsx       # Drag-and-drop file upload
+│   │   │   └── UploadZone.tsx       # Drag-and-drop file upload (25MB limit)
 │   │   ├── context/
 │   │   │   └── AppContext.tsx       # Global state (nav, auth, projects, docs, toasts)
 │   │   ├── views/
 │   │   │   ├── SplashView.tsx       # Landing screen
-│   │   │   ├── AuthView.tsx         # Sign in / Sign up
+│   │   │   ├── AuthView.tsx         # Sign in / Sign up (mocked for prototype)
 │   │   │   ├── DashboardView.tsx    # Project portfolio
 │   │   │   ├── WorkspaceView.tsx    # BRD compiler desk (backend connected)
 │   │   │   ├── DocumentView.tsx     # Document editor & viewer
 │   │   │   └── SettingsView.tsx     # Profile & preferences
-│   │   ├── App.tsx                  # Route switcher
+│   │   ├── App.tsx                  # Route switcher with auth guard
 │   │   ├── types.ts                 # Shared TypeScript types
 │   │   └── index.css                # Design tokens, dark mode, global styles
+│   ├── index.html                   # CSP meta tag included
 │   ├── vite.config.ts               # Vite config with /api proxy to :8000
 │   └── package.json
 ├── prompts/
-│   ├── brd.txt              # BRD generation prompt template
-│   ├── extraction.txt       # Requirements extraction prompt
-│   └── qa.txt               # QA review prompt
+│   ├── brd.txt              # BRD generation prompt — 10-section structure enforced
+│   ├── extraction.txt       # Requirements extraction prompt — FR/NFR labelled
+│   └── qa.txt               # QA review prompt — 10-point audit checklist
 ├── .env                     # Your API keys (not committed)
 ├── .env.example             # Template for .env
 ├── requirements.txt         # Python dependencies
@@ -161,7 +165,7 @@ SARVAM_API_KEY=your_sarvam_api_key_here
 
 This script automatically:
 - Creates `.env` from example if missing
-- Creates a Python 3.11 venv and installs backend deps if missing
+- Creates a Python venv and installs backend deps if missing
 - Installs frontend `node_modules` if missing
 - Starts the **backend** on `http://127.0.0.1:8000`
 - Starts the **frontend** on `http://localhost:3000`
@@ -202,11 +206,11 @@ pkill -f "uvicorn backend.main"; pkill -f "vite"
 
 Accepts `multipart/form-data`:
 
-| Field | Type | Description |
-|---|---|---|
-| `raw_text` | string | Pasted text notes (any language) |
-| `file` | file | Audio file (.wav, .mp3, .m4a) |
-| `language` | string | Target output language (default: `English`) |
+| Field | Type | Limit | Description |
+|---|---|---|---|
+| `raw_text` | string | 50,000 chars | Pasted text notes (any language) |
+| `file` | file | 25 MB | Audio file (.wav, .mp3, .m4a) |
+| `language` | string | — | Target output language (default: `English`) |
 
 Returns the `BRDState` dict. If `questions` is non-empty and `answers` is empty, the pipeline has paused — display the questions and POST them to `/api/clarify`.
 
@@ -223,13 +227,30 @@ Returns the completed `BRDState` with `final_brd` and `localized_brd`.
 
 ---
 
+## BRD Output Structure
+
+Every generated BRD contains these 10 sections:
+
+1. Executive Summary
+2. Project Objectives
+3. Scope (In-Scope / Out-of-Scope)
+4. Stakeholders (table)
+5. Functional Requirements (REQ-1.0, REQ-2.0 … with acceptance criteria)
+6. Non-Functional Requirements (Performance, Security, Scalability, Compliance)
+7. Assumptions and Dependencies
+8. Risks and Mitigations (table)
+9. User Stories (As a… I want… so that…)
+10. Acceptance Criteria Summary (table)
+
+---
+
 ## Frontend Views
 
 ### Splash
 Full-screen landing with animated starfield canvas, BRD Genie logo, and "Enter the Workspace" CTA.
 
 ### Auth (Sign In / Sign Up)
-Split-card layout. Sign In: email + password. Sign Up: full registration form with personal info, contact details, password strength meter, and terms checkbox.
+Split-card layout. **Note: auth is mocked for this prototype** — any credentials work. Sign Up includes password strength meter and terms checkbox.
 
 ### Dashboard
 Project portfolio with search, status badges, activity feed, and a floating Genie search bar (⌘K).
@@ -237,14 +258,14 @@ Project portfolio with search, status badges, activity feed, and a floating Geni
 ### Workspace (BRD Compiler Desk)
 The main generation view — connected to the real backend:
 - Configure project name, stakeholders, and output language (9 Indian language presets)
-- Upload audio or text files via drag-and-drop
+- Upload audio or text files via drag-and-drop (25MB max)
 - Live pipeline stepper: Transcription → Analysing → Writing
 - Clarification panel appears automatically if the AI detects ambiguities
-- Genie chat panel for conversational refinements
-- "Compile & Edit Draft" button to save the BRD and navigate to the document editor
+- Genie chat panel for conversational refinements after BRD is generated
+- "Compile & Edit Draft" button to save and navigate to the document editor
 
 ### Document
-Three-column document editor: TOC navigation, document content (Executive Summary, Objectives, Functional Requirements, Flowchart, User Stories), and Genie suggestions sidebar. Includes collaborator comments, version history, and export to Jira / Confluence / PDF.
+Three-column document editor: TOC navigation, document content (all 10 BRD sections), and Genie suggestions sidebar. Includes collaborator comments, version history, and export to Jira / Confluence / Markdown.
 
 ### Settings
 Profile editing, dark mode toggle, notification preferences, and sign out.
@@ -269,7 +290,7 @@ Profile editing, dark mode toggle, notification preferences, and sign out.
 - **Monospace / labels**: JetBrains Mono
 
 ### Dark Mode
-Controlled by `.dark` class on `<html>`, toggled via `localStorage`. CSS custom properties in Tailwind v4 `@theme {}` block.
+Controlled by `.dark` class on `<html>`, toggled via `localStorage`.
 
 ---
 
@@ -279,8 +300,23 @@ English, Hindi, Tamil, Telugu, Bengali, Marathi, Kannada, Gujarati, Malayalam
 
 ---
 
+## Prototype Limitations
+
+These are known, intentional shortcuts for the hackathon:
+
+| Limitation | Detail |
+|---|---|
+| **Auth is mocked** | Any email/password works. No real session management. |
+| **SQLite database** | Fine for demo. Swap to PostgreSQL for production. |
+| **No rate limiting** | `/api/start` and `/api/clarify` have no request throttling. |
+| **Single-user state** | All projects stored in React context (resets on page refresh for new BRDs). |
+| **Flowchart is static** | The SVG diagram in DocumentView is a placeholder, not generated from the BRD. |
+
+---
+
 ## Notes
 
-- Without `GROQ_API_KEY` the backend boots but returns `503` on generation endpoints. The frontend displays a toast with the error.
-- Without `SARVAM_API_KEY` audio upload is disabled; text inputs still work and translation falls back to returning the English BRD as-is.
-- The `/api` proxy in `vite.config.ts` forwards all frontend API calls to `http://127.0.0.1:8000` automatically — no CORS issues in development.
+- Without `GROQ_API_KEY` the backend boots but returns `503` on generation endpoints.
+- Without `SARVAM_API_KEY` audio upload is disabled and translation falls back to returning the English BRD as-is. Text input still works fully.
+- Uploaded audio files are automatically deleted from `temp_audio/` after processing.
+- The `/api` proxy in `vite.config.ts` forwards all frontend API calls to `http://127.0.0.1:8000` — no CORS issues in development.

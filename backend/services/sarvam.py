@@ -62,6 +62,14 @@ class SarvamService:
         if target_lang.lower() == "english" and source_lang.lower() == "english":
             return text
 
+        CHUNK_SIZE = 900
+        if len(text) > CHUNK_SIZE:
+            chunks = [text[i:i + CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
+            translated_chunks = [self._translate_chunk(c, source_lang, target_lang) for c in chunks]
+            return "".join(translated_chunks)
+        return self._translate_chunk(text, source_lang, target_lang)
+
+    def _translate_chunk(self, text: str, source_lang: str, target_lang: str) -> str:
         url = "https://api.sarvam.ai/translate"
         payload = {
             "input": [text],

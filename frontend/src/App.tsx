@@ -2,6 +2,7 @@ import React from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { AppProvider, useApp } from './context/AppContext';
 import ToastStack from './components/Toast';
+import { ViewType } from './types';
 
 import SplashView    from './views/SplashView';
 import AuthView      from './views/AuthView';
@@ -11,7 +12,15 @@ import DocumentView  from './views/DocumentView';
 import SettingsView  from './views/SettingsView';
 
 function Router() {
-  const { currentView } = useApp();
+  const { currentView, userEmail, navigate } = useApp();
+
+  const PROTECTED: ViewType[] = ['dashboard', 'workspace', 'document', 'settings'];
+
+  React.useEffect(() => {
+    if (PROTECTED.includes(currentView) && !userEmail) {
+      navigate('signin');
+    }
+  }, [currentView, userEmail]);
 
   const view = () => {
     switch (currentView) {

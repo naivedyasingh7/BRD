@@ -30,9 +30,7 @@ def create_workflow():
         questions = state.get("questions", [])
         answers = state.get("answers", [])
         if questions and not answers:
-            logger.info("--- [Router] Pausing for clarification questions. ---")
             return "pause_for_questions"
-        logger.info("--- [Router] Proceeding to BRD Generation. ---")
         return "generate_brd"
 
     builder.add_conditional_edges(

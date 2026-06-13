@@ -4,6 +4,12 @@ import DOMPurify from 'dompurify';
 import Navbar from '../components/Navbar';
 import { useApp } from '../context/AppContext';
 
+const SVG_PURIFY_CONFIG = {
+  USE_PROFILES: { svg: true, svgFilters: true },
+  FORBID_TAGS: ['script', 'use'],
+  FORBID_ATTR: ['onload', 'onerror', 'onclick', 'onmouseover', 'href', 'xlink:href'],
+};
+
 const STATUS_STYLE: Record<string, string> = {
   Validated:  'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800',
   'In Review':'bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 border-sky-200 dark:border-sky-800',
@@ -181,9 +187,7 @@ export default function DocumentView() {
   return (
     <div className="min-h-screen bg-bg-cream dark:bg-black text-primary dark:text-white pb-24 font-sans transition-colors duration-300">
 
-      {/* Export modal */}
-      <AnimatePresence>
-        {exporting && (
+      {exporting && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6"
           >
@@ -208,9 +212,7 @@ export default function DocumentView() {
         )}
       </AnimatePresence>
 
-      {/* Diagram zoom lightbox */}
-      <AnimatePresence>
-        {zoomed && (
+      {zoomed && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setZoomed(false)}
             className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-6 cursor-zoom-out"
@@ -226,7 +228,7 @@ export default function DocumentView() {
               <div className="bg-[#1A1A1A] p-8 rounded-xl flex items-center justify-center overflow-auto max-h-[65vh]">
                 <motion.div drag dragConstraints={{ left: -120, right: 120, top: -120, bottom: 120 }}
                   className="w-full max-w-2xl cursor-grab active:cursor-grabbing"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.flowchartSvg) }}
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.flowchartSvg, SVG_PURIFY_CONFIG) }}
                 />
               </div>
               <p className="text-[9px] font-mono uppercase tracking-widest text-slate-450 dark:text-zinc-500 mt-5">Drag to pan · Click outside to dismiss</p>
@@ -238,7 +240,6 @@ export default function DocumentView() {
       <Navbar active="document" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-        {/* Header */}
         <header className="mb-10 border-b border-black/5 dark:border-white/10 pb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
             <div>
@@ -272,7 +273,6 @@ export default function DocumentView() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
-          {/* Left sidebar */}
           <aside className="lg:col-span-3">
             <div className="bg-surface dark:bg-[#111111] border border-black/5 dark:border-white/10 p-5 sticky top-24 shadow-sm space-y-7">
               <div>
@@ -317,7 +317,6 @@ export default function DocumentView() {
             </div>
           </aside>
 
-          {/* Centre document */}
           <article className="lg:col-span-6 bg-surface dark:bg-[#111111] border border-black/5 dark:border-white/10 p-6 md:p-10 shadow-sm space-y-12 min-h-[800px]">
 
             <div ref={refs.executive} className="space-y-4">
@@ -388,7 +387,7 @@ export default function DocumentView() {
               </div>
               <div onClick={() => setZoomed(true)} className="bg-[#1A1A1A] p-8 border border-black/10 dark:border-white/10 flex justify-center items-center relative group cursor-zoom-in overflow-hidden">
                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="w-full text-white" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.flowchartSvg) }} />
+                <div className="w-full text-white" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(doc.flowchartSvg, SVG_PURIFY_CONFIG) }} />
                 <p className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-mono tracking-widest text-accent-gold/70 uppercase">[Click to zoom]</p>
               </div>
             </div>
@@ -420,9 +419,7 @@ export default function DocumentView() {
             </div>
           </article>
 
-          {/* Right sidebar */}
           <aside className="lg:col-span-3 space-y-6">
-            {/* Suggestions */}
             <div className="bg-surface dark:bg-[#111111] border border-black/5 dark:border-white/10 p-5 shadow-sm space-y-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-accent-gold animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
@@ -447,7 +444,6 @@ export default function DocumentView() {
               </div>
             </div>
 
-            {/* Genie prompt */}
             <div className="bg-surface dark:bg-[#111111] border border-black/5 dark:border-white/10 p-5 shadow-sm space-y-4">
               <p className="text-xs font-bold uppercase tracking-[0.15em]">Dialogue with Genie</p>
               {genieLog.length > 0 && (

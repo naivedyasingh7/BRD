@@ -9,7 +9,7 @@ export default function AmbientCanvas({ isDark = false }: { isDark?: boolean }) 
   useEffect(() => {
     const canvas = ref.current; if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
-    let raf: number, orbs: Orb[] = [], stars: Star[] = [];
+    let raf: number = 0, orbs: Orb[] = [], stars: Star[] = [];
 
     const resize = () => {
       canvas.width  = canvas.parentElement?.clientWidth  ?? window.innerWidth;

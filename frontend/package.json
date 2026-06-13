@@ -1,14 +1,11 @@
 {
   "name": "brd-genie",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview",
-    "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "dev": "vite --port=3000",
+    "build": "vite build"
   },
   "dependencies": {
     "dompurify": "^3.4.8",

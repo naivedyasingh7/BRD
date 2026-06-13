@@ -6,7 +6,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Any, Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -28,6 +28,17 @@ from backend.database import save_brd, get_all_brds, get_brd_by_id
 
 app = FastAPI(title="BRD Genie Backend API")
 
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -42,12 +53,13 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a"}
 ALLOWED_TEXT_EXTENSIONS = {".txt", ".pdf", ".docx"}
 ALLOWED_EXTENSIONS = ALLOWED_AUDIO_EXTENSIONS | ALLOWED_TEXT_EXTENSIONS
+MAX_TEXT_LENGTH = 50_000
+MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024
 
 _executor = ThreadPoolExecutor(max_workers=4)
 
 
 def _run_graph_sync(state_input: dict) -> dict:
-    """Run graph.invoke in a fresh thread with its own event loop so crewai sync API works."""
     import asyncio
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
@@ -100,6 +112,8 @@ async def start_session(
         raise HTTPException(status_code=503, detail="AI agents not available. Please set GROQ_API_KEY in your .env file and restart the server.")
     if not file and not raw_text:
         raise HTTPException(status_code=400, detail="Either file or raw_text must be provided.")
+    if raw_text and len(raw_text) > MAX_TEXT_LENGTH:
+        raise HTTPException(status_code=400, detail=f"raw_text exceeds maximum allowed length of {MAX_TEXT_LENGTH} characters.")
 
     state_input: BRDState = {
         "raw_input": "",
@@ -114,15 +128,19 @@ async def start_session(
     }
 
     if file:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Uploaded file has no filename.")
         try:
             file_path = safe_file_path(file.filename)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         try:
+            content = await file.read(MAX_FILE_SIZE_BYTES + 1)
+            if len(content) > MAX_FILE_SIZE_BYTES:
+                raise HTTPException(status_code=413, detail="File exceeds maximum allowed size of 25MB.")
             with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
+                buffer.write(content)
             state_input["raw_input"] = file_path
-            logger.info("Audio file saved successfully.")
         except Exception as e:
             logger.error(f"Failed to save uploaded file: {type(e).__name__}")
             raise HTTPException(status_code=500, detail="Failed to save uploaded file.")
@@ -130,7 +148,6 @@ async def start_session(
         state_input["raw_input"] = raw_text
 
     try:
-        logger.info("--- Initiating LangGraph Execution ---")
         final_state = await run_graph(state_input)
         clean_state = dict(final_state)
         if file and clean_state.get("raw_input"):
@@ -138,7 +155,13 @@ async def start_session(
         return clean_state
     except Exception as e:
         logger.error(f"Error executing graph: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error executing graph: {str(e)}")
+        raise HTTPException(status_code=500, detail="An internal error occurred while processing your request.")
+    finally:
+        if file and 'file_path' in locals():
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
 
 
 @app.post("/api/clarify")
@@ -159,7 +182,6 @@ async def clarify_session(request: ClarifyRequest):
             pass
 
     try:
-        logger.info("--- Resuming LangGraph Execution with Answers ---")
         final_state = await run_graph(state_input)
 
         project_name = final_state.get("structured_data", {}).get("context", "Software Project").split(".")[0][:50].strip() or "Software Project"
@@ -180,7 +202,7 @@ async def clarify_session(request: ClarifyRequest):
         return clean_state
     except Exception as e:
         logger.error(f"Error resuming graph: {type(e).__name__}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error resuming graph: {str(e)}")
+        raise HTTPException(status_code=500, detail="An internal error occurred while resuming the pipeline.")
 
 
 @app.get("/api/history")
@@ -189,7 +211,7 @@ def get_history():
         return get_all_brds()
     except Exception as e:
         logger.error(f"Error retrieving history: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve history.")
 
 
 @app.get("/api/history/{brd_id}")
@@ -203,4 +225,4 @@ def get_brd(brd_id: int):
         raise
     except Exception as e:
         logger.error(f"Error retrieving BRD: {type(e).__name__}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to retrieve BRD record.")

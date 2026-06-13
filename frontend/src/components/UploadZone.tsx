@@ -7,7 +7,7 @@ interface Props {
 }
 
 const ALLOWED = ['mp3', 'wav', 'm4a', 'txt', 'pdf', 'docx'];
-const MAX_BYTES = 128 * 1024 * 1024;
+const MAX_BYTES = 25 * 1024 * 1024;
 
 export default function UploadZone({ onFileAccepted, onError }: Props) {
   const [dragActive, setDragActive] = useState(false);
@@ -29,7 +29,8 @@ export default function UploadZone({ onFileAccepted, onError }: Props) {
           setProgress(null);
           if (ext === 'txt' || ext === 'pdf' || ext === 'docx') {
             const reader = new FileReader();
-            reader.onload = e => onFileAccepted(file, e.target?.result as string);
+            reader.onload = e => onFileAccepted(file, e.target?.result as string ?? '');
+            reader.onerror = () => onError(`Failed to read file: ${file.name}`);
             reader.readAsText(file);
           } else {
             onFileAccepted(file, '');
@@ -83,7 +84,7 @@ export default function UploadZone({ onFileAccepted, onError }: Props) {
             </div>
             <h4 className="font-serif font-bold text-sm italic text-primary dark:text-white mb-1">Drag &amp; drop transcripts or recordings</h4>
             <p className="text-[11px] text-slate-655 dark:text-zinc-400 max-w-xs mb-4 leading-relaxed font-sans font-normal">
-              Accepts MP3, WAV, M4A, TXT, PDF, DOCX — up to 128 MB
+              Accepts MP3, WAV, M4A, TXT, PDF, DOCX — up to 25 MB
             </p>
             <button type="button" onClick={e => { e.stopPropagation(); inputRef.current?.click(); }}
               className="bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-primary dark:text-white hover:bg-bg-cream dark:hover:bg-zinc-800 transition-all shadow-sm"

@@ -30,7 +30,7 @@ PROMPT_QA = _load_prompt("qa.txt")
 context_agent = Agent(
     role="Context Understanding Analyst",
     goal="Analyze transcripts to identify the project domain, primary objectives, and core business problem.",
-    backstory=PROMPT_EXTRACTION or "You are an expert business analyst who specializes in understanding the root cause of business problems from unstructured conversations.",
+    backstory="You are an expert business analyst who specializes in understanding the root cause of business problems from unstructured conversations.",
     llm=shared_groq_llm,
     verbose=True
 )
@@ -38,7 +38,7 @@ context_agent = Agent(
 requirement_agent = Agent(
     role="Requirement Extraction Specialist",
     goal="Extract distinct functional and non-functional requirements from raw transcripts.",
-    backstory=PROMPT_EXTRACTION or "You have a keen eye for technical details and can distill complex conversations into actionable software requirements.",
+    backstory="You have a keen eye for technical details and can distill complex conversations into actionable software requirements.",
     llm=shared_groq_llm,
     verbose=True
 )
@@ -46,7 +46,7 @@ requirement_agent = Agent(
 stakeholder_agent = Agent(
     role="Stakeholder Analyst",
     goal="Identify all user personas, actors, and stakeholders mentioned or implied in the context.",
-    backstory=PROMPT_EXTRACTION or "You are an expert in user experience and systems architecture, mapping out who uses the system and how they interact with it.",
+    backstory="You are an expert in user experience and systems architecture, mapping out who uses the system and how they interact with it.",
     llm=shared_groq_llm,
     verbose=True
 )
@@ -78,7 +78,7 @@ structuring_agent = Agent(
 brd_gen_agent = Agent(
     role="BRD Author",
     goal="Write the complete, professional Business Requirement Document using the structured requirements, context, and clarification answers.",
-    backstory=PROMPT_BRD or "You are an elite enterprise software architect who writes comprehensive, industry-standard BRDs.",
+    backstory="You are an elite enterprise software architect who writes comprehensive, industry-standard BRDs.",
     llm=shared_groq_llm,
     verbose=True
 )
@@ -86,7 +86,7 @@ brd_gen_agent = Agent(
 qa_doc_agent = Agent(
     role="BRD Quality Assurance Reviewer",
     goal="Review the generated BRD for completeness, consistency, formatting standards, and ensure no placeholders remain.",
-    backstory=PROMPT_QA or "You are a strict technical auditor. You ensure every BRD meets the highest enterprise standards before delivery.",
+    backstory="You are a strict technical auditor. You ensure every BRD meets the highest enterprise standards before delivery.",
     llm=shared_groq_llm,
     verbose=True
 )
@@ -143,19 +143,21 @@ def extract_agent(state: BRDState) -> dict:
     extraction_instructions = PROMPT_EXTRACTION + "\n\n" if PROMPT_EXTRACTION else ""
 
     task_context = Task(
-        description=f"{extraction_instructions}Analyze the following transcript and determine the project domain, core problem, and objectives.\nTranscript: {cleaned_input}",
-        expected_output="A summary of the business context, domain, problem statement, and objectives.",
+        description=f"{extraction_instructions}Analyze the following transcript and determine the project domain, core problem, and objectives.\nTranscript:\n{cleaned_input}",
+        expected_output="A structured summary with: Domain, Problem Statement, Primary Objectives (bullet list), and Key Constraints.",
         agent=context_agent
     )
     task_requirements = Task(
-        description=f"{extraction_instructions}Extract functional and non-functional requirements from the transcript.\nTranscript: {cleaned_input}",
-        expected_output="A list of functional and non-functional requirements.",
-        agent=requirement_agent
+        description=f"{extraction_instructions}Using the context analysis above, extract ALL functional and non-functional requirements from the transcript. Label each as FUNCTIONAL or NON-FUNCTIONAL. Be exhaustive.\nTranscript:\n{cleaned_input}",
+        expected_output="Two clearly labelled lists: Functional Requirements and Non-Functional Requirements, each as bullet points.",
+        agent=requirement_agent,
+        context=[task_context]
     )
     task_stakeholders = Task(
-        description=f"{extraction_instructions}Identify all user personas and stakeholders from the transcript.\nTranscript: {cleaned_input}",
-        expected_output="A list of stakeholders and their roles.",
-        agent=stakeholder_agent
+        description=f"{extraction_instructions}Using the context and requirements above, identify all stakeholders, user personas, and external systems.\nTranscript:\n{cleaned_input}",
+        expected_output="A list of stakeholders with Name, Role, and Key Interests for each.",
+        agent=stakeholder_agent,
+        context=[task_context, task_requirements]
     )
 
     discovery_crew = Crew(
@@ -171,7 +173,6 @@ def extract_agent(state: BRDState) -> dict:
             "context": task_context.output.raw if task_context.output else "",
             "requirements": task_requirements.output.raw if task_requirements.output else "",
             "stakeholders": task_stakeholders.output.raw if task_stakeholders.output else "",
-            "raw_crew_output": str(discovery_output)
         }
         logger.info("Discovery Crew execution completed successfully.")
         return {"structured_data": structured_data}
@@ -200,7 +201,8 @@ def clarify_agent(state: BRDState) -> dict:
     task_risk = Task(
         description=f"Analyze the project details for assumptions, dependencies, and potential risks.\nProject Details: {context_data}",
         expected_output="A list of risks, assumptions, and dependencies.",
-        agent=risk_agent
+        agent=risk_agent,
+        context=[task_ambiguity]
     )
 
     validation_crew = Crew(
@@ -245,12 +247,13 @@ def brd_agent(state: BRDState) -> dict:
     brd_draft = state.get("brd_draft", "")
 
     qa_pairs = [f"Q: {q}\nA: {a}" for q, a in zip(questions, answers)]
-    clarification_qa = "\n".join(qa_pairs) if qa_pairs else "No clarification questions were answered."
+    clarification_qa = "\n".join(qa_pairs) if qa_pairs else ""
 
     if brd_draft and answers:
         logger.info("--- [Refinement Flow Triggered] ---")
+        feedback = clarification_qa if clarification_qa else "\n".join(answers)
         task_refine = Task(
-            description=f"Update the existing BRD draft incorporating the user's feedback/answers.\nFeedback: {clarification_qa}\nExisting BRD:\n{brd_draft}",
+            description=f"Update the existing BRD draft incorporating the following user feedback. Preserve all sections not affected by the feedback.\nFeedback:\n{feedback}\nExisting BRD:\n{brd_draft}",
             expected_output="The fully updated, complete Business Requirements Document in Markdown format.",
             agent=refinement_agent
         )
@@ -264,32 +267,38 @@ def brd_agent(state: BRDState) -> dict:
             logger.error(f"Refinement Crew failed: {type(e).__name__}")
             raise RuntimeError(f"BRD Refinement failed: {str(e)}")
 
-    logger.info("--- [Documentation Generation Flow Triggered] ---")
     context_str = (
         f"Context: {structured_data.get('context')}\n"
         f"Requirements: {structured_data.get('requirements')}\n"
         f"Stakeholders: {structured_data.get('stakeholders')}\n"
         f"Risks: {structured_data.get('risks')}\n"
-        f"Clarifications:\n{clarification_qa}"
+        + (f"Clarifications:\n{clarification_qa}" if clarification_qa else "")
     )
 
     task_structure = Task(
-        description=f"Organize the following project data into logical BRD sections (Exec Summary, Scope, Requirements, Risks, etc.).\nData: {context_str}",
-        expected_output="A detailed outline and structured hierarchy of requirements.",
+        description=(
+            f"Organize the following extracted project data into a complete BRD outline with these sections: "
+            f"Executive Summary, Project Objectives, Scope (In/Out), Stakeholders, Functional Requirements (with IDs REQ-1.0 etc), "
+            f"Non-Functional Requirements, Assumptions & Dependencies, Risks & Mitigations, User Stories, Acceptance Criteria.\n"
+            f"Data:\n{context_str}"
+        ),
+        expected_output="A detailed BRD outline with all 10 sections populated. Every functional requirement must have an ID, title, description, and status.",
         agent=structuring_agent
     )
     brd_instructions = PROMPT_BRD + "\n\n" if PROMPT_BRD else ""
     qa_instructions = PROMPT_QA + "\n\n" if PROMPT_QA else ""
 
     task_write = Task(
-        description=f"{brd_instructions}Write the complete Business Requirements Document (BRD) in Markdown format based on the structured hierarchy.",
-        expected_output="A professional, comprehensive BRD in Markdown.",
-        agent=brd_gen_agent
+        description=f"{brd_instructions}Using the structured outline above, write the COMPLETE Business Requirements Document in Markdown. Do not skip or abbreviate any section. Every requirement must have a unique ID.",
+        expected_output="A complete, professional BRD in Markdown with all 10 sections fully written. No placeholders, no TODOs.",
+        agent=brd_gen_agent,
+        context=[task_structure]
     )
     task_qa = Task(
-        description=f"{qa_instructions}Review the drafted BRD. Fix any formatting issues, ensure completeness, and remove any filler text. Provide the final approved Markdown document.",
-        expected_output="The final, polished BRD in Markdown.",
-        agent=qa_doc_agent
+        description=f"{qa_instructions}Review the BRD above. Fix inconsistencies, ensure every risk has a mitigation, every acceptance criterion is testable, and all stakeholders in requirements appear in the Stakeholders section. Return the FULL corrected document.",
+        expected_output="The final, audit-ready BRD in Markdown. Complete document — do not summarize.",
+        agent=qa_doc_agent,
+        context=[task_write]
     )
 
     doc_crew = Crew(
@@ -310,7 +319,6 @@ def brd_agent(state: BRDState) -> dict:
 
 
 def localize_agent(state: BRDState) -> dict:
-    logger.info("--- [LangGraph] Localization Node running ---")
     final_brd = state.get("final_brd", "")
     language = state.get("language", "English")
 
