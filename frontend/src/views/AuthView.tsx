@@ -5,6 +5,12 @@ import BrandLogo from '../components/BrandLogo';
 import ThemeToggle from '../components/ThemeToggle';
 import { useApp } from '../context/AppContext';
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 function pwStrength(p: string) {
   let s = 0;
   if (p.length >= 8) s++;
@@ -76,6 +82,67 @@ export default function AuthView() {
       addToast(isSignIn ? 'Welcome back! Redirecting…' : 'Account created! Welcome to BRD Genie.', 'success');
       navigate('dashboard');
     }, 1400);
+  };
+
+  const handleGoogleLogin = () => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId === 'your_google_client_id_here' || clientId.trim() === '') {
+      setLoading(true);
+      addToast('Google Client ID is not configured. Logging in with a mock Google account for preview...', 'info');
+      setTimeout(() => {
+        setLoading(false);
+        setUserEmail('demo.user@gmail.com');
+        addToast('Welcome back! Signed in with Mock Google Account', 'success');
+        navigate('dashboard');
+      }, 1000);
+      return;
+    }
+
+    if (!window.google) {
+      addToast('Google login library is not loaded. Please wait a moment or check your internet connection.', 'error');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'email profile openid',
+        callback: async (tokenResponse: any) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            try {
+              const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${tokenResponse.access_token}`);
+              const profile = await res.json();
+              if (profile && profile.email) {
+                setUserEmail(profile.email);
+                addToast(`Welcome back! Signed in with Google as ${profile.email}`, 'success');
+                navigate('dashboard');
+              } else {
+                addToast('Failed to retrieve user profile from Google.', 'error');
+              }
+            } catch (err) {
+              console.error('Error fetching Google profile:', err);
+              addToast('Error signing in with Google.', 'error');
+            } finally {
+              setLoading(false);
+            }
+          } else {
+            setLoading(false);
+            addToast('Google login cancelled or failed.', 'error');
+          }
+        },
+        error_callback: (err: any) => {
+          setLoading(false);
+          console.error('Google SSO Error:', err);
+          addToast('Google login error occurred.', 'error');
+        }
+      });
+      tokenClient.requestAccessToken();
+    } catch (err) {
+      setLoading(false);
+      console.error('Google token client initialization failed:', err);
+      addToast('Failed to initialize Google Login.', 'error');
+    }
   };
 
   const switchMode = (signIn: boolean) => { setIsSignIn(signIn); setErrors({}); };
@@ -219,18 +286,20 @@ export default function AuthView() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: 'Google',    logo: 'https://www.svgrepo.com/show/475656/google-color.svg', invert: false },
-                    { label: 'Microsoft', logo: 'https://www.svgrepo.com/show/452070/microsoft.svg',    invert: true  },
-                  ].map(({ label, logo, invert }) => (
-                    <button key={label} type="button"
-                      onClick={() => addToast(`${label} SSO is not configured in this demo.`, 'info')}
-                      className="flex items-center justify-center gap-2 py-2.5 px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg hover:bg-black/8 dark:hover:bg-white/10 transition-all text-xs font-semibold text-slate-655 dark:text-white/60 hover:text-primary dark:hover:text-white cursor-pointer"
-                    >
-                      <img src={logo} alt={label} className={`w-4 h-4 ${invert ? 'dark:invert dark:opacity-60' : ''}`} />
-                      {label}
-                    </button>
-                  ))}
+                  <button type="button"
+                    onClick={handleGoogleLogin}
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg hover:bg-black/8 dark:hover:bg-white/10 transition-all text-xs font-semibold text-slate-655 dark:text-white/60 hover:text-primary dark:hover:text-white cursor-pointer"
+                  >
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-4 h-4" />
+                    Google
+                  </button>
+                  <button type="button"
+                    onClick={() => addToast('Microsoft SSO is not configured in this demo.', 'info')}
+                    className="flex items-center justify-center gap-2 py-2.5 px-4 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 rounded-lg hover:bg-black/8 dark:hover:bg-white/10 transition-all text-xs font-semibold text-slate-655 dark:text-white/60 hover:text-primary dark:hover:text-white cursor-pointer"
+                  >
+                    <img src="https://www.svgrepo.com/show/452070/microsoft.svg" alt="Microsoft" className="w-4 h-4 dark:invert dark:opacity-60" />
+                    Microsoft
+                  </button>
                 </div>
 
                 <p className="text-center text-xs text-slate-450 dark:text-white/35">
